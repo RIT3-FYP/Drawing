@@ -2,12 +2,16 @@
 // ================ Global variables =================
 let choosen_id = null;
 let points = [];   // Used in Draw Line
+let newPath; // svg path
 const as = "";
+
 let app = new Vue({
     el: '#main',
     data: {
         type: "pen",
-        code: ""
+        code: "",
+        color: "black",
+        size: "5",
     },
     components: {
 
@@ -76,7 +80,7 @@ let app = new Vue({
     },
     mounted() {
         let coordinates = [];
-        let newPath; // svg path
+
 
         // Coordinate variables
         let cursorPosition = null;
@@ -143,20 +147,29 @@ let app = new Vue({
                         if (!newPath) {
                             coordinates.push({ x: current_position.x - e.originalEvent.movementX, y: current_position.y - e.originalEvent.movementY });
                             coordinates.push({ x: current_position.x, y: current_position.y });
-                            coordinates = coordinates.slice(-2);
 
-                            newPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                            newPath.setAttribute('id', uuidv4());
-                            newPath.setAttribute('d', `M${simplifyNumber(coordinates[0].x)},${simplifyNumber(coordinates[0].y)}`);
+                            let id = uuidv4();
+                            // newPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                            // newPath.setAttribute('id', uuidv4());
+                            // newPath.setAttribute('d', `M${simplifyNumber(coordinates[0].x)},${simplifyNumber(coordinates[0].y)}`);
+                            // $("svg#draw").append(newPath);
+                            startDraw(id, coordinates[0], app.color, app.size);
+                            // let point = coordinates[0];
+                            // let color = app.color;
+                            // let size = app.size;
+                            con.invoke("StartDraw", id, coordinates[0], app.color, app.size);
+                            // con.invoke("StartDraw", id, point, color, size);
 
-                            $("svg#draw").append(newPath);
                         } else if (current_position.x != coordinates[1].x || current_position.y != coordinates[1].y) {
                             coordinates.push({ x: current_position.x, y: current_position.y });
                             coordinates = coordinates.slice(-3);
 
-                            newPath.setAttribute('d',
-                                `${newPath.getAttribute('d')}Q${simplifyNumber(coordinates[1].x)},${simplifyNumber(coordinates[1].y)},${simplifyNumber(mid(coordinates[1], coordinates[2]).x)},${simplifyNumber((mid(coordinates[1], coordinates[2]).y))}`
-                            );
+                            draw(coordinates[1], mid(coordinates[1], coordinates[2]));
+                            con.invoke("Draw",coordinates[1],mid(coordinates[1], coordinates[2]));
+
+                            // newPath.setAttribute('d',
+                            //     `${newPath.getAttribute('d')}Q${simplifyNumber(coordinates[1].x)},${simplifyNumber(coordinates[1].y)},${simplifyNumber(mid(coordinates[1], coordinates[2]).x)},${simplifyNumber((mid(coordinates[1], coordinates[2]).y))}`
+                            // );
                         }
                         break;
                     case "cursor":      // Move
@@ -288,12 +301,15 @@ let app = new Vue({
                         coordinates.push({ x: current_position.x, y: current_position.y });
                         coordinates = coordinates.slice(-3);
 
-                        newPath.setAttribute('d',
-                            `${newPath.getAttribute('d')}Q${simplifyNumber(mid(coordinates[1], coordinates[2]).x)},${simplifyNumber((mid(coordinates[1], coordinates[2]).y))},${simplifyNumber(coordinates[2].x)},${simplifyNumber(coordinates[2].y)},`
-                        );
+                        draw(mid(coordinates[1], coordinates[2]), coordinates[2]);
+                        con.invoke("Draw", mid(coordinates[1], coordinates[2]), coordinates[2]);
+                        // newPath.setAttribute('d',
+                        //     `${newPath.getAttribute('d')}Q${simplifyNumber(mid(coordinates[1], coordinates[2]).x)},${simplifyNumber((mid(coordinates[1], coordinates[2]).y))},${simplifyNumber(coordinates[2].x)},${simplifyNumber(coordinates[2].y)},`
+                        // );
                     }
+                    con.invoke("ClearPath");
+                    clearPath();
                     coordinates = [];
-                    newPath = null;
                     break;
                 case "cursor":      // Move
                     if (choosen_id) {
@@ -456,13 +472,21 @@ function update(timeStamp) {
 function mid(a, b) {
     return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
 }
-
-function drawCurve(a, b) {
-    if (line_id) {
-        $(`#${line_id}`).attr("d",
-            `${$(`#${line_id}`).attr("d")}Q${simplifyNumber(a.x)},${simplifyNumber(a.y)},${simplifyNumber(b.x)},${simplifyNumber(b.y)}`
-        );
-    }
+function startDraw(id, point, color, size) {
+    newPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    newPath.setAttribute('id', id);
+    newPath.setAttribute('d', `M${simplifyNumber(point.x)},${simplifyNumber(point.y)}`);
+    newPath.setAttribute("stroke", color);
+    newPath.setAttribute("stroke-width", size + "px");
+    $("svg#draw").append(newPath);
+}
+function draw(pointA, pointB) {
+    newPath.setAttribute('d',
+        `${newPath.getAttribute('d')}Q${simplifyNumber(pointA.x)},${simplifyNumber(pointA.y)},${simplifyNumber(pointB.x)},${simplifyNumber((pointB.y))}`
+    );
+}
+function clearPath(){
+    newPath = null;
 }
 
 function simplifyNumber(n) {
@@ -516,6 +540,9 @@ con.onclose(err => {
     location = '/';
 });
 
+con.on('StartDraw',startDraw);
+con.on('Draw',draw);
+con.on('ClearPath',clearPath);
 // con.on('ReceiveLine', drawLine);
 // con.on('ReceiveCurve', drawCurve);
 // con.on('ReceiveImage', drawImage);
@@ -529,4 +556,4 @@ con.onclose(err => {
 // });
 
 
-con.start().then(e => $('main').show());
+con.start().then(e => $('#main').show());
