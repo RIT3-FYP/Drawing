@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- Target
+1) Resize and movable
+2) Add Shape
+3) Add textbox-->
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drawing</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+
+<body>
+    <div id="fps">FPS</div>
+
+    <div id="main" v-cloak>
+        <div id="nav">
+            <!-- Creating radio buttons -->
+            <div id="type">
+                <label v-bind:class="{ typeActive: type=='pen' }" id="pen" title="pen">
+                    <input type="radio" name="type" value="pen" v-model="type">
+                    <span class="material-icons">edit</span>
+                </label>
+                <label v-bind:class="{ typeActive: type=='cursor' }" id="cursor" title="cursor">
+                    <input type="radio" name="type" value="cursor" v-model="type">
+                    <span class="material-icons">open_with</span>
+                </label>
+                <label v-bind:class="{ typeActive: type=='text' }" id="text" title="textbox">
+                    <input type="radio" name="type" value="text" v-model="type">
+                    <span class="material-icons">title</span>
+                </label>
+                <label v-bind:class="{ typeActive: type=='rect' }" id="rect" title="rectangle">
+                    <input type="radio" name="type" value="rect" v-model="type">
+                    <span class="material-icons">crop_5_4</span>
+                </label>
+                <label v-bind:class="{ typeActive: type=='circle' }" id="circle" title="circle">
+                    <input type="radio" name="type" value="circle" v-model="type">
+                    <span class="material-icons">panorama_fish_eye</span>
+                </label>
+                <label v-bind:class="{ typeActive: type=='line' }" id="line" title="line">
+                    <input type="radio" name="type" value="line" v-model="type">
+                    <span class="material-icons">horizontal_rule</span>
+                </label>
+                <label id="upload" title="upload">
+                    <input type="file" name="file" v-on:change="upload" hidden>
+                    <span class="material-icons">cloud_upload</span>
+                </label>
+                <label id="save" title="save">
+                    <input type="button" name="type" v-on:change="save" hidden>
+                    <span class="material-icons">save</span>
+                </label>
+            </div>
+        </div>
+
+        <div id="content">
+            <svg id="grid_wrap" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <pattern id="smallGrid" width="8" height="8" patternUnits="userSpaceOnUse">
+                        <path d="M8,0L0,0,0,8" fill="none" stroke="#cccccc" stroke-width="0.5" />
+                    </pattern>
+                    <pattern id="grid" width="80" height="80" patternUnits="userSpaceOnUse">
+                        <rect width="80" height="80" fill="url(#smallGrid)" />
+                        <path d="M80,0L0,0,0,80" fill="none" stroke="#cccccc" stroke-width="1" />
+                    </pattern>
+                </defs>
+
+                <rect width="100%" height="100%" fill="url(#grid)" />
+            </svg>
+            <svg id="draw" viewBox="0 0 1052 744">
+                <g id="resize_wrap">
+                    <rect id="resize_border" class='notMoveable' fill="none" stroke="lightblue" stroke-width="1px" />
+                    <rect id="resize_nw" class='notMoveable' width="10" height="10" />
+                    <rect id="resize_n" class='notMoveable' width="10" height="10" />
+                    <rect id="resize_ne" class='notMoveable' width="10" height="10" />
+                    <rect id="resize_e" class='notMoveable' width="10" height="10" />
+                    <rect id="resize_se" class='notMoveable' width="10" height="10" />
+                    <rect id="resize_s" class='notMoveable' width="10" height="10" />
+                    <rect id="resize_sw" class='notMoveable' width="10" height="10" />
+                    <rect id="resize_w" class='notMoveable' width="10" height="10" />
+                </g>
+            </svg>
+        </div>
+    </div>
+
+    <script src="js/jquery.min.js"></script>
+    <script src="js/vue.min.js"></script>
+    <script src="js/image.js"></script>
+    <script src="js/main.js"></script>
+</body>
+
+</html>
