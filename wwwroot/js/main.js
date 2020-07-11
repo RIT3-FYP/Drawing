@@ -2,6 +2,7 @@
 // ================ Global variables =================
 let choosen_id = null;
 let points = [];   // Used in Draw Line
+let id = null;
 let newPath; // svg path
 const as = "";
 
@@ -110,6 +111,7 @@ let app = new Vue({
                         if (e.target.tagName == "path" || e.target.tagName == "rect" || e.target.tagName == "ellipse" || e.target.tagname == "text" || e.target.tagName == "image") {
                             if (e.target.id == "resize_border" || e.target.classList.contains("notMoveable")) break;
                             choosen_id = e.target.id;
+                            console.log(e.target.id)
                             $('#resize_wrap').show();
                             selected_border($(`#${choosen_id}`)[0].getBBox());
                             position = { x: 0, y: 0 };
@@ -122,11 +124,17 @@ let app = new Vue({
                         break;
                     case "rect":        // Rectangle
                         unselect();
-                        cursorPosition = { x: current_position.x, y: current_position.y };
+                        if (!newPath) {
+                            newPath = true;
+                            cursorPosition = { x: current_position.x, y: current_position.y };
+                        }
                         break;
                     case "circle":      // Circle
                         unselect();
-                        cursorPosition = { x: current_position.x, y: current_position.y };
+                        if (!newPath) {
+                            newPath = true;
+                            cursorPosition = { x: current_position.x, y: current_position.y };
+                        }
                         break;
                     case "line":        // Line
                         unselect();
@@ -144,32 +152,20 @@ let app = new Vue({
 
                 switch (app.type) {
                     case "pen":         // Draw
-                        if (!newPath) {
+                        if (!id) {
                             coordinates.push({ x: current_position.x - e.originalEvent.movementX, y: current_position.y - e.originalEvent.movementY });
                             coordinates.push({ x: current_position.x, y: current_position.y });
 
-                            let id = uuidv4();
-                            // newPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                            // newPath.setAttribute('id', uuidv4());
-                            // newPath.setAttribute('d', `M${simplifyNumber(coordinates[0].x)},${simplifyNumber(coordinates[0].y)}`);
-                            // $("svg#draw").append(newPath);
+                            id = uuidv4();
                             startDraw(id, coordinates[0], app.color, app.size);
-                            // let point = coordinates[0];
-                            // let color = app.color;
-                            // let size = app.size;
                             con.invoke("StartDraw", id, coordinates[0], app.color, app.size);
-                            // con.invoke("StartDraw", id, point, color, size);
 
                         } else if (current_position.x != coordinates[1].x || current_position.y != coordinates[1].y) {
                             coordinates.push({ x: current_position.x, y: current_position.y });
                             coordinates = coordinates.slice(-3);
-
-                            draw(coordinates[1], mid(coordinates[1], coordinates[2]));
-                            con.invoke("Draw",coordinates[1],mid(coordinates[1], coordinates[2]));
-
-                            // newPath.setAttribute('d',
-                            //     `${newPath.getAttribute('d')}Q${simplifyNumber(coordinates[1].x)},${simplifyNumber(coordinates[1].y)},${simplifyNumber(mid(coordinates[1], coordinates[2]).x)},${simplifyNumber((mid(coordinates[1], coordinates[2]).y))}`
-                            // );
+                            let midPoint = mid(coordinates[1], coordinates[2]);
+                            draw(id, coordinates[1], midPoint);
+                            con.invoke("Draw", id, coordinates[1], midPoint);
                         }
                         break;
                     case "cursor":      // Move
@@ -182,7 +178,6 @@ let app = new Vue({
                         }
                         else if (resize) {
                             selected_border($(`#${choosen_id}`)[0].getBBox());
-
                             differentPosition.x = current_position.x - (selected_info.x + selected_info.width);
                             current_scale.x = (differentPosition.x + selected_info.width) / selected_info.width;
 
@@ -196,52 +191,41 @@ let app = new Vue({
 
                         break;
                     case "rect":        // Rectangle
-                        if ($.isEmptyObject(differentPosition)) {
-                            newPath = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-                            newPath.setAttribute('id', uuidv4());
-                            newPath.setAttribute('x', cursorPosition.x);
-                            newPath.setAttribute('y', cursorPosition.y);
-
-                            $("svg#draw").append(newPath);
+                        if (!id) {
+                            id = uuidv4();
+                            let point = { x: current_position.x, y: current_position.y };
+                            startRect(id, point, app.color, app.size);
+                            con.invoke("StartRect", id, point, app.color, app.size);
                         }
+                        differentPosition = { x: Math.abs(current_position.x - cursorPosition.x), y: Math.abs(current_position.y - cursorPosition.y) };
 
-                        differentPosition = { x: current_position.x - cursorPosition.x, y: current_position.y - cursorPosition.y };
+                        // Square ===================================================
+                        if (e.shiftKey) differentPosition.x > differentPosition.y ? differentPosition.y = differentPosition.x : differentPosition.x = differentPosition.y
 
-                        // if (e.shiftKey) differentPosition.x > differentPosition.y ? differentPosition.y = differentPosition.x : differentPosition.x = differentPosition.y
+                        let pointR = null;
 
+                        // Set rect size ==================================================
+                        let boxR = { x: differentPosition.x, y: differentPosition.y };
 
-                        if (differentPosition.x < 0 && differentPosition.y < 0) {
-                            newPath.setAttribute("x", current_position.x);
-                            newPath.setAttribute("y", current_position.y);
-                            newPath.setAttribute('width', cursorPosition.x - current_position.x);
-                            newPath.setAttribute('height', cursorPosition.y - current_position.y);
-                        } else if (differentPosition.x < 0) {
-                            newPath.setAttribute("x", current_position.x);
-                            newPath.setAttribute("y", cursorPosition.y);
-                            newPath.setAttribute("width", cursorPosition.x - current_position.x);
-                            newPath.setAttribute('height', differentPosition.y);
-                        } else if (differentPosition.y < 0) {
-                            newPath.setAttribute("y", current_position.y);
-                            newPath.setAttribute("x", cursorPosition.x);
-                            newPath.setAttribute('width', differentPosition.x);
-                            newPath.setAttribute('height', cursorPosition.y - current_position.y);
-                        } else {
-                            newPath.setAttribute("x", cursorPosition.x);
-                            newPath.setAttribute("y", cursorPosition.y);
-                            newPath.setAttribute('width', differentPosition.x);
-                            newPath.setAttribute('height', differentPosition.y);
-                        }
+                        // Fix position =====================================================
+                        if (current_position.x < cursorPosition.x && current_position.y < cursorPosition.y) //Left top
+                            pointR = { x: cursorPosition.x - differentPosition.x, y: cursorPosition.y - differentPosition.y };
+                        else if (current_position.x < cursorPosition.x) //Left
+                            pointR = { x: cursorPosition.x - differentPosition.x, y: cursorPosition.y };
+                        else if (current_position.y < cursorPosition.y)  //Top
+                            pointR = { x: cursorPosition.x, y: cursorPosition.y - differentPosition.y };
+                        else //Bottom Right
+                            pointR = { x: cursorPosition.x, y: cursorPosition.y };
+
+                        drawRect(id, pointR, boxR);
+                        con.invoke("DrawRect", id, pointR, boxR);
                         break;
                     case "circle":      // Circle
-                        if (!newPath) { // check new elemen
-                            newPath = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
-                            newPath.setAttribute('id', uuidv4());
-
-
-                            newPath.setAttribute('cx', cursorPosition.x);
-                            newPath.setAttribute('cy', cursorPosition.y);
-
-                            $("svg#draw").append(newPath);    // add into svg
+                        if (!id) { // check new element
+                            id = uuidv4();
+                            let point = { x: current_position.x, y: current_position.y };
+                            startCircle(id, point, app.color, app.size);
+                            con.invoke("StartCircle", id, point, app.color, app.size);
                         }
 
                         differentPosition = { x: Math.abs(current_position.x - cursorPosition.x), y: Math.abs(current_position.y - cursorPosition.y) };
@@ -249,41 +233,37 @@ let app = new Vue({
                         // Prefect circle ===================================================
                         if (e.shiftKey) differentPosition.x > differentPosition.y ? differentPosition.y = differentPosition.x : differentPosition.x = differentPosition.y
 
+                        let pointC = null;
                         // Set circle size ==================================================
-                        newPath.setAttribute('rx', differentPosition.x / 2);
-                        newPath.setAttribute('ry', differentPosition.y / 2);
+                        let boxC = { x: differentPosition.x / 2, y: differentPosition.y / 2 };
 
                         // Fix position =====================================================
-                        if (current_position.x - cursorPosition.x < 0 && current_position.y - cursorPosition.y < 0) {  // left top
-                            newPath.setAttribute('cx', cursorPosition.x - differentPosition.x / 2);
-                            newPath.setAttribute('cy', cursorPosition.y - differentPosition.y / 2);
-                        }
-                        else if (current_position.x - cursorPosition.x < 0) {   // left
-                            newPath.setAttribute('cx', cursorPosition.x - differentPosition.x / 2);
-                            newPath.setAttribute('cy', cursorPosition.y + differentPosition.y / 2);
-                        }
-                        else if (current_position.y - cursorPosition.y < 0) {  /// top
-                            newPath.setAttribute('cx', cursorPosition.x + differentPosition.x / 2);
-                            newPath.setAttribute('cy', cursorPosition.y - differentPosition.y / 2);
-                        }
-                        else {  // bottom right
-                            newPath.setAttribute('cx', cursorPosition.x + differentPosition.x / 2);
-                            newPath.setAttribute('cy', cursorPosition.y + differentPosition.y / 2);
-                        }
+                        if (current_position.x - cursorPosition.x < 0 && current_position.y - cursorPosition.y < 0)   // left top
+                            pointC = { x: cursorPosition.x - differentPosition.x / 2, y: cursorPosition.y - differentPosition.y / 2 };
+                        else if (current_position.x - cursorPosition.x < 0)   // left
+                            pointC = { x: cursorPosition.x - differentPosition.x / 2, y: cursorPosition.y + differentPosition.y / 2 };
+                        else if (current_position.y - cursorPosition.y < 0)   /// top
+                            pointC = { x: cursorPosition.x + differentPosition.x / 2, y: cursorPosition.y - differentPosition.y / 2 };
+                        else   // bottom right
+                            pointC = { x: cursorPosition.x + differentPosition.x / 2, y: cursorPosition.y + differentPosition.y / 2 };
+
+                        drawCircle(id, pointC, boxC);
+                        con.invoke("DrawCircle", id, pointC, boxC);
+
                         break;
                     case "line":        // Line
                         let newPoint = comparePoint(current_position);
-                        if (!newPath) {
+                        if (!id) {
                             cursorPosition = newPoint ? { x: newPoint.x, y: newPoint.y } : { x: current_position.x, y: current_position.y };
-                            newPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                            newPath.setAttribute('id', uuidv4());
-                            newPath.setAttribute('class', "straightLine");
-
-
-                            $("svg#draw").append(newPath);
+                            id = uuidv4();
                         }
-                        newPoint ? newPath.setAttribute('d', `M${cursorPosition.x},${cursorPosition.y},L${newPoint.x},${newPoint.y}`) :
-                            newPath.setAttribute('d', `M${cursorPosition.x},${cursorPosition.y},L${current_position.x},${current_position.y}`);
+                        let pointLA = {x:cursorPosition.x,y:cursorPosition.y};
+                        let pointLB = null;
+                        // newPoint ? newPath.setAttribute('d', `M${cursorPosition.x},${cursorPosition.y},L${newPoint.x},${newPoint.y}`) :
+                        //     newPath.setAttribute('d', `M${cursorPosition.x},${cursorPosition.y},L${current_position.x},${current_position.y}`);
+                        newPoint ? pointLB = newPoint : pointLB = current_position;
+                        drawLine(id,pointLA,pointLB,app.color,app.size);
+                        con.invoke('DrawLine',id,pointLA,pointLB,app.color,app.size);
                         break;
                     default:
                         break;
@@ -297,18 +277,15 @@ let app = new Vue({
 
             switch (app.type) {
                 case "pen":         // Draw
-                    if (newPath) {
+                    if (id) {
                         coordinates.push({ x: current_position.x, y: current_position.y });
                         coordinates = coordinates.slice(-3);
 
-                        draw(mid(coordinates[1], coordinates[2]), coordinates[2]);
-                        con.invoke("Draw", mid(coordinates[1], coordinates[2]), coordinates[2]);
-                        // newPath.setAttribute('d',
-                        //     `${newPath.getAttribute('d')}Q${simplifyNumber(mid(coordinates[1], coordinates[2]).x)},${simplifyNumber((mid(coordinates[1], coordinates[2]).y))},${simplifyNumber(coordinates[2].x)},${simplifyNumber(coordinates[2].y)},`
-                        // );
+                        let midPoint = mid(coordinates[1], coordinates[2]);
+                        draw(id, midPoint, coordinates[2]);
+                        con.invoke("Draw", id, midPoint, coordinates[2]);
                     }
-                    con.invoke("ClearPath");
-                    clearPath();
+                    id = null;
                     coordinates = [];
                     break;
                 case "cursor":      // Move
@@ -326,7 +303,6 @@ let app = new Vue({
                                         const coord = $(`#${choosen_id}`).attr('d').substring(1).split("L");
                                         for (let i of coord) {
                                             let coord_xy = i.split(",");
-                                            console.log(coord_xy);
                                             if ($.isNumeric(coord_xy[0]) && $.isNumeric(coord_xy[1])) {
                                                 !new_coord ?
                                                     new_coord = `M${(parseFloat(coord_xy[0]) + position.x).toFixed(2)},${(parseFloat(coord_xy[1]) + position.y).toFixed(2)},` :
@@ -366,9 +342,7 @@ let app = new Vue({
                                 default:
                                     break;
                             }
-
                             $(`#${choosen_id}`).removeAttr('style');
-
 
                             selected_border($(`#${choosen_id}`)[0].getBBox());
                             $("#resize_wrap").removeAttr('style');
@@ -378,21 +352,23 @@ let app = new Vue({
                     drag = false;
                     break;
                 case "text":        // Textbox
-
                     break;
                 case "rect":        // Rectangle
-                    newPath = differentPosition = cursorPosition = null;
+                    if (e.type == "pointerup")
+                        newPath = differentPosition = cursorPosition = id = null;
                     break;
                 case "circle":      // Circle
-                    newPath = differentPosition = cursorPosition = null;
+                    if (e.type == "pointerup")
+                        newPath = differentPosition = cursorPosition = id = null;
                     break;
                 case "line":        // Line
                     if (cursorPosition) {
-
                         points.push(cursorPosition);
                         points.push({ x: current_position.x, y: current_position.y });
+                        // Update hub point
                     }
-                    newPath = cursorPosition = current_position = null;
+                    if (e.type == "pointerup")
+                        newPath = cursorPosition = current_position = id = null;
                     break;
                 default:
                     break;
@@ -473,21 +449,66 @@ function mid(a, b) {
     return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
 }
 function startDraw(id, point, color, size) {
-    newPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    newPath.setAttribute('id', id);
-    newPath.setAttribute('d', `M${simplifyNumber(point.x)},${simplifyNumber(point.y)}`);
-    newPath.setAttribute("stroke", color);
-    newPath.setAttribute("stroke-width", size + "px");
-    $("svg#draw").append(newPath);
+    let path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute('id', id);
+    path.setAttribute('d', `M${simplifyNumber(point.x)},${simplifyNumber(point.y)}`);
+    path.setAttribute("stroke", color);
+    path.setAttribute("stroke-width", size + "px");
+    $("svg#draw").append(path);
 }
-function draw(pointA, pointB) {
-    newPath.setAttribute('d',
-        `${newPath.getAttribute('d')}Q${simplifyNumber(pointA.x)},${simplifyNumber(pointA.y)},${simplifyNumber(pointB.x)},${simplifyNumber((pointB.y))}`
+function draw(id, pointA, pointB) {
+    let path = $(`#${id}`)[0];
+    path.setAttribute('d',
+        `${path.getAttribute('d')}Q${simplifyNumber(pointA.x)},${simplifyNumber(pointA.y)},${simplifyNumber(pointB.x)},${simplifyNumber((pointB.y))}`
     );
 }
-function clearPath(){
-    newPath = null;
+function startRect(id, point, color, size) {
+    let rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.setAttribute('id', id);
+    rect.setAttribute("stroke", color);
+    rect.setAttribute("stroke-width", size + "px");
+    rect.setAttribute('x', point.x);
+    rect.setAttribute('y', point.y);
+
+    $("svg#draw").append(rect);
 }
+function drawRect(id, point, box) {
+    let rect = $(`#${id}`)[0];
+    rect.setAttribute('width', box.x);
+    rect.setAttribute('height', box.y);
+    rect.setAttribute('x', point.x);
+    rect.setAttribute('y', point.y);
+}
+function startCircle(id, point, color, size) {  // ID,point,color,size,fillColor
+    let circle = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+    circle.setAttribute('id', id);
+    circle.setAttribute('cx', point.x);
+    circle.setAttribute('cy', point.y);
+    circle.setAttribute('stroke', color);
+    circle.setAttribute('stroke-width', size + "px");
+    $("svg#draw").append(circle);    // add into svg
+}
+function drawCircle(id, point, box) {
+    let circle = $(`#${id}`)[0];
+    circle.setAttribute('rx', box.x);
+    circle.setAttribute('ry', box.y);
+    circle.setAttribute('cx', point.x);
+    circle.setAttribute('cy', point.y);
+}
+function drawLine(id,point,point2,color,size)
+{
+    let path = $(`#${id}`)[0];
+    if(!path){
+        path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute('id', id);
+        path.setAttribute('class', "straightLine");
+        path.setAttribute('stroke',color);
+        path.setAttribute('stroke-width',size);
+    }
+    path.setAttribute('d', `M${point.x},${point.y},L${point2.x},${point2.y}`);
+    $("svg#draw").append(path);
+}
+
 
 function simplifyNumber(n) {
     if (!$.isNumeric(n)) return;
@@ -540,16 +561,19 @@ con.onclose(err => {
     location = '/';
 });
 
-con.on('StartDraw',startDraw);
-con.on('Draw',draw);
-con.on('ClearPath',clearPath);
+con.on('StartDraw', startDraw);
+con.on('Draw', draw);
+con.on('StartRect', startRect);
+con.on('DrawRect', drawRect);
+con.on('StartCircle', startCircle);
+con.on('DrawCircle', drawCircle);
+con.on('DrawLine',drawLine);
 // con.on('ReceiveLine', drawLine);
 // con.on('ReceiveCurve', drawCurve);
 // con.on('ReceiveImage', drawImage);
 // con.on('ReceiveClear', clear);
 // con.on('ReceiveCommands', async commands => {
 //     for (let cmd of commands) {
-//         console.log("haha");
 //         await window[cmd.name](...cmd.param);
 //         await sleep(1);
 //     }

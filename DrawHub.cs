@@ -70,13 +70,28 @@ namespace Drawing
             // commands.Add(new Command("startDraw", new Object[] { id, point, color, size }));
             await Clients.Others.SendAsync("StartDraw", id, point, color, size);
         }
-        public async Task Draw(Point pointA, Point pointB)
+        public async Task Draw(string id, Point pointA, Point pointB)
         {
-            await Clients.Others.SendAsync("Draw", pointA, pointB);
+            // commands.Add(new Command("Draw", new Object[] { id, pointA, pointB }));
+            await Clients.Others.SendAsync("Draw", id, pointA, pointB);
         }
-        public async Task ClearPath()
+
+        public async Task StartRect(string id, Point point, string color,string size){
+            await Clients.Others.SendAsync("StartRect", id, point, color,size);
+        }
+        public async Task DrawRect(string id, Point point, Point box){
+            await Clients.Others.SendAsync("DrawRect", id, point, box);
+        }
+        public async Task StartCircle(string id, Point point, string color,string size){
+            await Clients.Others.SendAsync("StartCircle", id, point, color,size);
+        }
+        public async Task DrawCircle(string id, Point point, Point box){
+            await Clients.Others.SendAsync("DrawCircle", id, point, box);
+        }
+        // function drawLine(id,point,point2,color,size)
+        public async Task DrawLine(string id,Point point,Point point2,string color,string size)
         {
-            await Clients.Others.SendAsync("ClearPath");
+            await Clients.Others.SendAsync("DrawLine", id, point, point2,color,size);
         }
 
         public override async Task OnConnectedAsync()
