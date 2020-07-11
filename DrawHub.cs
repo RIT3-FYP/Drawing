@@ -72,7 +72,8 @@ namespace Drawing
         //     commands.Clear();
         //     await Clients.Others.SendAsync("ReceiveClear");
         // }
-
+        // public async Task StartCurve(){}
+        // public async Task 
 
         public override async Task OnConnectedAsync()
         {
