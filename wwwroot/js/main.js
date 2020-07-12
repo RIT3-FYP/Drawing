@@ -253,17 +253,22 @@ let app = new Vue({
                         break;
                     case "line":        // Line
                         let newPoint = comparePoint(current_position);
+
                         if (!id) {
                             cursorPosition = newPoint ? { x: newPoint.x, y: newPoint.y } : { x: current_position.x, y: current_position.y };
                             id = uuidv4();
+                            // startLine(id,cursorPosition,app.color,app.size);
+                            // con.invoke("StartLine",id,cursorPosition,app.color,app.size);
                         }
-                        let pointLA = {x:cursorPosition.x,y:cursorPosition.y};
-                        let pointLB = null;
+                        let tempCurrent = { x: current_position.x, y: current_position.y };
+                        let pointLA = null;
                         // newPoint ? newPath.setAttribute('d', `M${cursorPosition.x},${cursorPosition.y},L${newPoint.x},${newPoint.y}`) :
                         //     newPath.setAttribute('d', `M${cursorPosition.x},${cursorPosition.y},L${current_position.x},${current_position.y}`);
-                        newPoint ? pointLB = newPoint : pointLB = current_position;
-                        drawLine(id,pointLA,pointLB,app.color,app.size);
-                        con.invoke('DrawLine',id,pointLA,pointLB,app.color,app.size);
+                        newPoint ? pointLA = newPoint : pointLA = tempCurrent;
+                        drawLine(id, cursorPosition, pointLA, app.color, app.size);
+                        con.invoke('DrawLine', id, cursorPosition, pointLA, app.color, app.size);
+                        // drawLine(id, pointLA);
+                        // con.invoke('DrawLine', id, pointLA);
                         break;
                     default:
                         break;
@@ -298,7 +303,6 @@ let app = new Vue({
                             switch (e.target.tagName) {
                                 case 'path':
                                     let new_coord;
-
                                     if (e.target.classList.contains("straightLine")) {
                                         const coord = $(`#${choosen_id}`).attr('d').substring(1).split("L");
                                         for (let i of coord) {
@@ -362,13 +366,19 @@ let app = new Vue({
                         newPath = differentPosition = cursorPosition = id = null;
                     break;
                 case "line":        // Line
-                    if (cursorPosition) {
-                        points.push(cursorPosition);
-                        points.push({ x: current_position.x, y: current_position.y });
-                        // Update hub point
-                    }
-                    if (e.type == "pointerup")
+                    if (e.type == "pointerup") {
+                        if (cursorPosition) {
+                            // points.push(cursorPosition);
+                            // points.push({ x: current_position.x, y: current_position.y });
+                            let newPoint = { x: current_position.x, y: current_position.y };
+                            // Update hub point
+                            pushPoint(cursorPosition);
+                            con.invoke("PushPoint", cursorPosition);
+                            pushPoint(newPoint);
+                            con.invoke("PushPoint", newPoint);
+                        }
                         newPath = cursorPosition = current_position = id = null;
+                    }
                     break;
                 default:
                     break;
@@ -467,46 +477,48 @@ function startRect(id, point, color, size) {
     rect.setAttribute('id', id);
     rect.setAttribute("stroke", color);
     rect.setAttribute("stroke-width", size + "px");
-    rect.setAttribute('x', point.x);
-    rect.setAttribute('y', point.y);
+    rect.setAttribute('x', simplifyNumber(point.x));
+    rect.setAttribute('y', simplifyNumber(point.y));
 
     $("svg#draw").append(rect);
 }
 function drawRect(id, point, box) {
     let rect = $(`#${id}`)[0];
-    rect.setAttribute('width', box.x);
-    rect.setAttribute('height', box.y);
-    rect.setAttribute('x', point.x);
-    rect.setAttribute('y', point.y);
+    rect.setAttribute('width', simplifyNumber(box.x));
+    rect.setAttribute('height', simplifyNumber(box.y));
+    rect.setAttribute('x', simplifyNumber(point.x));
+    rect.setAttribute('y', simplifyNumber(point.y));
 }
 function startCircle(id, point, color, size) {  // ID,point,color,size,fillColor
     let circle = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
     circle.setAttribute('id', id);
-    circle.setAttribute('cx', point.x);
-    circle.setAttribute('cy', point.y);
+    circle.setAttribute('cx', simplifyNumber(point.x));
+    circle.setAttribute('cy', simplifyNumber(point.y));
     circle.setAttribute('stroke', color);
     circle.setAttribute('stroke-width', size + "px");
     $("svg#draw").append(circle);    // add into svg
 }
 function drawCircle(id, point, box) {
     let circle = $(`#${id}`)[0];
-    circle.setAttribute('rx', box.x);
-    circle.setAttribute('ry', box.y);
-    circle.setAttribute('cx', point.x);
-    circle.setAttribute('cy', point.y);
+    circle.setAttribute('rx', simplifyNumber(box.x));
+    circle.setAttribute('ry', simplifyNumber(box.y));
+    circle.setAttribute('cx', simplifyNumber(point.x));
+    circle.setAttribute('cy', simplifyNumber(point.y));
 }
-function drawLine(id,point,point2,color,size)
-{
+function drawLine(id, point, point2, color, size) {
     let path = $(`#${id}`)[0];
-    if(!path){
+    if (!path) {
         path = document.createElementNS("http://www.w3.org/2000/svg", "path");
         path.setAttribute('id', id);
         path.setAttribute('class', "straightLine");
-        path.setAttribute('stroke',color);
-        path.setAttribute('stroke-width',size);
+        path.setAttribute('stroke', color);
+        path.setAttribute('stroke-width', size);
     }
-    path.setAttribute('d', `M${point.x},${point.y},L${point2.x},${point2.y}`);
+    path.setAttribute('d', `M${simplifyNumber(point.x)},${simplifyNumber(point.y)},L${simplifyNumber(point2.x)},${simplifyNumber(point2.y)}`);
     $("svg#draw").append(path);
+}
+function pushPoint(point){
+    points.push(point);
 }
 
 
@@ -567,7 +579,9 @@ con.on('StartRect', startRect);
 con.on('DrawRect', drawRect);
 con.on('StartCircle', startCircle);
 con.on('DrawCircle', drawCircle);
-con.on('DrawLine',drawLine);
+// con.on('StartLine', startLine);
+con.on('DrawLine', drawLine);
+con.on('PushPoint',pushPoint);
 // con.on('ReceiveLine', drawLine);
 // con.on('ReceiveCurve', drawCurve);
 // con.on('ReceiveImage', drawImage);
