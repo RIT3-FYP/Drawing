@@ -119,8 +119,9 @@ let app = new Vue({
                             drag = true;
                         }
                         break;
-                    case "text":        // Textbox
-
+                    case "text":        // Text
+                        id = uuidv4();
+                        startText(id, current_position.x, current_position.y, app.color, app.size);
                         break;
                     case "rect":        // Rectangle
                         unselect();
@@ -187,8 +188,8 @@ let app = new Vue({
                             );
                         }
                         break;
-                    case "text":        // Textbox
-
+                    case "text":        // Text
+                    
                         break;
                     case "rect":        // Rectangle
                         if (!id) {
@@ -355,7 +356,8 @@ let app = new Vue({
                     cursorPosition = position = null;
                     drag = false;
                     break;
-                case "text":        // Textbox
+                case "text":        // Text
+
                     break;
                 case "rect":        // Rectangle
                     if (e.type == "pointerup")
@@ -521,6 +523,17 @@ function pushPoint(point){
     points.push(point);
 }
 
+//Text function
+function startText(id, x, y, color, size) {
+    let text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    text.setAttribute('id', id);
+    text.setAttribute('x', x);
+    text.setAttribute('y', y);
+    text.setAttribute('fill', color);
+    text.setAttribute('font-size', size + "em");
+    text.textContent = "Type Something";
+    $('svg#draw').append(text);
+}
 
 function simplifyNumber(n) {
     if (!$.isNumeric(n)) return;
