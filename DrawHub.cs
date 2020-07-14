@@ -102,6 +102,18 @@ namespace Drawing
             await Clients.Others.SendAsync("PushPoint", point);
         }
 
+        public async Task Remove(string id)
+        {
+            await Clients.Others.SendAsync("Remove", id);
+        }
+        public async Task RemoveAll()
+        {
+            await Clients.Others.SendAsync("RemoveAll");
+        }
+        public async Task Create(string obj)
+        {
+            await Clients.Others.SendAsync("Create", obj);
+        }
         public override async Task OnConnectedAsync()
         {
             await base.OnConnectedAsync();

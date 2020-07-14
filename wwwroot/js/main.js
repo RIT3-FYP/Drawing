@@ -339,16 +339,18 @@ let app = new Vue({
                         con.invoke("Draw", id, midPoint, coordinates[2]);
                     }
                     if (id != null)
-                        undoList.push({ mode: 'create', object: $(`#${id}`)[0] });
+                        undoList.push({ mode: 'new', object: $(`#${id}`).clone()[0] });
                     id = null;
                     coordinates = [];
                     break;
                 case "cursor":      // Move
                     const change = $(`#${choosen_id}`).css('transform')
-
+                    let object1 = null;
+                    let object2 = null;
                     if (choosen_id && change != "none") {
                         const selected_css_value = change.match(/matrix.*\((.+)\)/)[1].split(', ').map(parseFloat);
-
+                        $(`#${choosen_id},#resize_wrap`).removeAttr('style');
+                        object1 = $(`#${choosen_id}`).clone()[0];
                         if (drag && selected_css_value) {       // drag
                             position = { x: selected_css_value[4], y: selected_css_value[5] };
 
@@ -518,7 +520,8 @@ let app = new Vue({
                                     break;
                             }
                         }
-                        $(`#${choosen_id},#resize_wrap`).removeAttr('style');
+                        object2 = $(`#${choosen_id}`).clone()[0];
+                        undoList.push({ mode: 'move', object1: object1, object2: object2 });
                         selected_border($(`#${choosen_id}`)[0].getBBox());
                     }
                     current_scale = { x: 1, y: 1 };
@@ -530,13 +533,19 @@ let app = new Vue({
 
                     break;
                 case "rect":        // Rectangle
-                    if (e.type == "pointerup")
-                        newPath = differentPosition = cursorPosition = id = null;
+                if (e.type == "pointerup") {
+                    if (id != null)
+                        undoList.push({ mode: 'new', object: $(`#${id}`).clone()[0] });
+                    newPath = differentPosition = cursorPosition = id = null;
+                }
 
                     break;
                 case "circle":      // Circle
-                    if (e.type == "pointerup")
-                        newPath = differentPosition = cursorPosition = id = null;
+                if (e.type == "pointerup") {
+                    if (id != null)
+                        undoList.push({ mode: 'new', object: $(`#${id}`).clone()[0] });
+                    newPath = differentPosition = cursorPosition = id = null;
+                }
                     break;
                 case "line":        // Line
                     if (e.type == "pointerup") {
@@ -548,6 +557,8 @@ let app = new Vue({
                             pushPoint(newPoint);
                             con.invoke("PushPoint", newPoint);
                         }
+                        if (id != null)
+                            undoList.push({ mode: 'new', object: $(`#${id}`).clone()[0] });
                         newPath = cursorPosition = current_position = id = null;
                     }
                     break;
@@ -571,14 +582,18 @@ let app = new Vue({
 
         // Delete selected object
         $(document).on('keydown', function (e) {
-            if (choosen_id && e.keyCode == 8 || e.keyCode == 46) {
-                $(`#${choosen_id}`).remove();
+            if (e.keyCode == 8 || e.keyCode == 46 && choosen_id) {
+                undoList.push({ mode: 'remove', object: $(`#${choosen_id}`)[0] });
+                remove(choosen_id);
                 unselect();
-            } else if (e.ctrlKey && e.keyCode == '90' && !e.originalEvent.repeat) {
+            }
+            else if (e.ctrlKey && e.keyCode == '90' && !e.originalEvent.repeat) {
                 console.log('undo');
+                unselect();
                 undo();
             } else if (e.ctrlKey && e.keyCode == '89' && !e.originalEvent.repeat) {
                 console.log('redo');
+                unselect();
                 redo();
             }
         });
@@ -720,48 +735,68 @@ function create(object) {
 }
 // Undo event trigger
 function undo() {  // Everytime will push {event:,object:}  
-
     if (undoList.length == 0) return;
-    let object = undoList.pop();
-    undoReplace(object)
+    let temp = undoList.pop();
+    let tempId = $(temp.object).attr('id');    // use for remove and new
+    if (temp.mode == 'new') {
+        remove(tempId);
+        con.invoke('Remove', tempId);
+    }
+    else if (temp.mode == 'move') {
+        let firstId = $(temp.object1).attr('id');
+        let secondId = $(temp.object2).attr('id');
+        if (firstId == secondId) {
+            remove(firstId);
+            con.invoke('Remove', firstId);
 
-    redoList.push(object);
+            create(temp.object1);
+            // con.invoke('Create',JSON.stringify(temp.object1));
 
+        }
+    } else if (temp.mode == 'remove') {
+        remove(tempId);
+        create(temp.object);
+        // con.invoke('Create', JSON.stringify(temp.object));
+
+
+    } else {
+        console.log("Unknown");
+    }
+    redoList.push(temp);
 
 }
+/*when  */
 // Redo event trigger
 function redo() {
 
     if (redoList.length == 0) return;
+
     let temp = redoList.pop();
-    undoList.push(temp);
-
-}
-function undoReplace(temp) {
+    console.log(temp.mode);
     let tempId = $(temp.object).attr('id');
     if (temp.mode == 'new') {
+        create(temp.object);    
+        // let pp = $(temp.object1)[0].innerHTML;
+        // console.log(pp);
+        // con.invoke('Create', JSON.stringify(temp.object));
+    }
+    else if (temp.mode == 'move') {
+        let firstId = $(temp.object1).attr('id');
+        let secondId = $(temp.object2).attr('id');
+        if (firstId == secondId) {
+            remove(firstId);
+            con.invoke('Remove', firstId);
+            create(temp.object2);
+            // con.invoke('Create', JSON.stringify(temp.object2));
+
+        }
+    } else if (temp.mode == 'remove') {
         remove(tempId);
-    }
-    else if (temp.mode == 'move') {
-
-    } else if (temp.mode == 'remove') {
-        create(temp.object);
+        con.invoke('Remove', tempId);
     } else {
         console.log("Unknown");
     }
-}
-function redoReplace(temp) {
-    let tempId = $(temp.object).attr('id');
-    if (temp.mode == 'new') {
-        create(temp.object);
-    }
-    else if (temp.mode == 'move') {
-
-    } else if (temp.mode == 'remove') {
-
-    } else {
-        console.log("Unknown");
-    }
+    undoList.push(temp);
 }
 
 
@@ -824,5 +859,9 @@ con.on('StartCircle', startCircle);
 con.on('DrawCircle', drawCircle);
 con.on('DrawLine', drawLine);
 con.on('PushPoint', pushPoint);
+
+con.on('Remove', remove);
+con.on('RemoveAll', removeAll);
+con.on('Create', create);
 
 con.start().then(e => $('#main').show());
