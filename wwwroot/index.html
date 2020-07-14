@@ -21,7 +21,7 @@
             <!-- Creating radio buttons -->
             <div id="type">
                 <label v-bind:class="{ typeActive: type=='pen' }" id="pen" title="pen">
-                    <input type="radio" name="type" value="pen" v-model="type">
+                    <input type="radio" name="type" value="pen" v-model="type" v-on:change="unselect()">
                     <span class="material-icons">edit</span>
                 </label>
                 <label v-bind:class="{ typeActive: type=='cursor' }" id="cursor" title="cursor">
@@ -29,19 +29,19 @@
                     <span class="material-icons">open_with</span>
                 </label>
                 <label v-bind:class="{ typeActive: type=='text' }" id="text" title="textbox">
-                    <input type="radio" name="type" value="text" v-model="type">
+                    <input type="radio" name="type" value="text" v-model="type" v-on:change="unselect()">
                     <span class="material-icons">title</span>
                 </label>
                 <label v-bind:class="{ typeActive: type=='rect' }" id="rect" title="rectangle">
-                    <input type="radio" name="type" value="rect" v-model="type">
+                    <input type="radio" name="type" value="rect" v-model="type" v-on:change="unselect()">
                     <span class="material-icons">crop_5_4</span>
                 </label>
                 <label v-bind:class="{ typeActive: type=='circle' }" id="circle" title="circle">
-                    <input type="radio" name="type" value="circle" v-model="type">
+                    <input type="radio" name="type" value="circle" v-model="type" v-on:change="unselect()">
                     <span class="material-icons">panorama_fish_eye</span>
                 </label>
                 <label v-bind:class="{ typeActive: type=='line' }" id="line" title="line">
-                    <input type="radio" name="type" value="line" v-model="type">
+                    <input type="radio" name="type" value="line" v-model="type" v-on:change="unselect()">
                     <span class="material-icons">horizontal_rule</span>
                 </label>
                 <label id="upload" title="upload">
@@ -55,7 +55,7 @@
             </div>
         </div>
 
-        <div id="content" contenteditable="true">
+        <div id="content">
             <svg id="grid_wrap" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
                 <defs>
                     <pattern id="smallGrid" width="8" height="8" patternUnits="userSpaceOnUse">

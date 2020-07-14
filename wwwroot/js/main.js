@@ -1,9 +1,12 @@
 "use strict"
+// right upper corner
 // ================ Global variables =================
+let id = null;
+let undoList = [];   // Push the id with action
+let redoList = [];   // After undo, push the undoList to the redoList
 let choosen_id = null;
 let points = [];   // Used in Draw Line
-let id = null;
-let newPath; // svg path
+let newPath; // Currently used to store the boolean whether the thing got or not
 const as = "";
 
 let app = new Vue({
@@ -18,45 +21,6 @@ let app = new Vue({
 
     },
     methods: {
-        menu: function () {
-            if (this.type == "cursor") {
-                // Resize =========================================================================
-                // $("#resize_nw").on('pointerdown', function (e) {
-
-                // });
-
-                // $("#resize_n").on('pointerdown', function (e) {
-
-                // });
-
-                // $("#resize_ne").on('pointerdown', function (e) {
-
-                // });
-
-                // $("#resize_e").on('pointerdown', function (e) {
-                //     cursorPosition.x = e.clientX;
-                //     cursorPosition.y = e.clientY;
-                //     resizable = true;
-                //     dragable = false;
-                // });
-
-                // $("#resize_se").on('pointerdown', function (e) {
-
-                // });
-
-                // $("#resize_s").on('pointerdown', function (e) {
-
-                // });
-
-                // $("#resize_sw").on('pointerdown', function (e) {
-
-                // });
-
-                // $("#resize_w").on('pointerdown', function (e) {
-
-                // });
-            }
-        },
         upload: async (e) => {  // upload image
             let f = e.target.files[0];
             let svg = $('svg#draw').attr("viewBox").split(" ");
@@ -81,12 +45,12 @@ let app = new Vue({
     },
     mounted() {
         let coordinates = [];
-
+        let resize_angle;
 
         // Coordinate variables
-        let cursorPosition = null;
-        let differentPosition = null;
-        let position = null;
+        let cursorPosition = {};
+        let differentPosition = {};
+        let position = { x: 0, y: 0 };
         let scale = { x: 1.00, y: 1.00 };
         let current_scale = { x: 1.00, y: 1.00 };
 
@@ -103,25 +67,31 @@ let app = new Vue({
                 e.preventDefault();
                 let current_position = cursorPoint(e);
 
+                if (choosen_id && e.target.tagName == "svg") unselect();
+
                 switch (app.type) {
                     case "pen":         // Draw
                         unselect();
                         break;
                     case "cursor":      // Move
-                        if (e.target.tagName == "path" || e.target.tagName == "rect" || e.target.tagName == "ellipse" || e.target.tagname == "text" || e.target.tagName == "image") {
-                            if (e.target.id == "resize_border" || e.target.classList.contains("notMoveable")) break;
+                        let resize_target = ["resize_nw", "resize_n", "resize_ne", "resize_e", "resize_se", "resize_s", "resize_sw", "resize_w"];
+                        let drag_target = ["path", "rect", "ellipse", "text", "image"];
+
+                        if (resize_target.includes(e.target.id) && choosen_id) {
+                            resize_angle = e.target.id;
+                            cursorPosition = current_position;
+                            resize = true;
+                        }
+                        else if (drag_target.includes(e.target.tagName) && !resize_target.includes(e.target.id) && e.target.id != "resize_border" && !e.target.classList.contains("notMoveable")) {
                             choosen_id = e.target.id;
-                            console.log(e.target.id)
                             $('#resize_wrap').show();
                             selected_border($(`#${choosen_id}`)[0].getBBox());
-                            position = { x: 0, y: 0 };
                             cursorPosition = current_position;
                             drag = true;
                         }
                         break;
-                    case "text":        // Text
-                        id = uuidv4();
-                        startText(id, current_position.x, current_position.y, app.color, app.size);
+                    case "text":        // Textbox
+
                         break;
                     case "rect":        // Rectangle
                         unselect();
@@ -139,8 +109,6 @@ let app = new Vue({
                         break;
                     case "line":        // Line
                         unselect();
-                        break;
-                    default:
                         break;
                 }
             }
@@ -178,18 +146,103 @@ let app = new Vue({
                             );
                         }
                         else if (resize) {
-                            selected_border($(`#${choosen_id}`)[0].getBBox());
-                            differentPosition.x = current_position.x - (selected_info.x + selected_info.width);
-                            current_scale.x = (differentPosition.x + selected_info.width) / selected_info.width;
+                            let selected_info = $(`#${choosen_id}`)[0].getBBox();
 
-                            $(`#${choosen_id}`).css(
-                                'transform',
-                                `translate(${selected_info.x}px,${selected_info.y}px) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x}px,-${selected_info.y}px)`
-                            );
+                            if (resize_angle) {
+                                if (resize_angle == "resize_e") {
+                                    differentPosition.x = current_position.x - (selected_info.x + selected_info.width);
+                                    current_scale.x = (differentPosition.x + selected_info.width) / selected_info.width;
+                                    $(`#${choosen_id},#resize_wrap`).css(
+                                        'transform',
+                                        `translate(${selected_info.x}px,0) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x}px,0)`
+                                    );
+                                }
+                                else if (resize_angle == "resize_w") {
+                                    differentPosition.x = selected_info.x - current_position.x;
+                                    current_scale.x = (differentPosition.x + selected_info.width) / selected_info.width;
+                                    $(`#${choosen_id},#resize_wrap`).css(
+                                        'transform',
+                                        `translate(${selected_info.x + selected_info.width}px,0) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x + selected_info.width}px,0)`
+                                    );
+                                }
+                                else if (resize_angle == "resize_s") {
+                                    differentPosition.y = current_position.y - (selected_info.y + selected_info.height);
+                                    current_scale.y = (differentPosition.y + selected_info.height) / selected_info.height;
+                                    $(`#${choosen_id},#resize_wrap`).css(
+                                        'transform',
+                                        `translate(0,${selected_info.y}px) scale(${current_scale.x},${current_scale.y}) translate(0,-${selected_info.y}px)`
+                                    );
+                                }
+                                else if (resize_angle == "resize_n") {
+                                    differentPosition.y = selected_info.y - current_position.y;
+                                    current_scale.y = (differentPosition.y + selected_info.height) / selected_info.height;
+                                    $(`#${choosen_id},#resize_wrap`).css(
+                                        'transform',
+                                        `translate(0,${selected_info.y + selected_info.height}px) scale(${current_scale.x},${current_scale.y}) translate(0,-${selected_info.y + selected_info.height}px)`
+                                    );
+                                }
+                                else if (resize_angle == "resize_se") {
+                                    differentPosition.y = current_position.y - (selected_info.y + selected_info.height);
+                                    differentPosition.x = current_position.x - (selected_info.x + selected_info.width);
+                                    current_scale.y = (differentPosition.y + selected_info.height) / selected_info.height;
+                                    current_scale.x = (differentPosition.x + selected_info.width) / selected_info.width;
+                                    if (e.shiftKey) {
+                                        if (current_scale.x > current_scale.y) current_scale.y = current_scale.x;
+                                        else current_scale.x = current_scale.y;
+                                    }
+                                    $(`#${choosen_id},#resize_wrap`).css(
+                                        'transform',
+                                        `translate(${selected_info.x}px,${selected_info.y}px) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x}px,-${selected_info.y}px)`
+                                    );
+                                }
+                                else if (resize_angle == "resize_nw") {
+                                    differentPosition.x = selected_info.x - current_position.x;
+                                    differentPosition.y = selected_info.y - current_position.y;
+                                    current_scale.x = (differentPosition.x + selected_info.width) / selected_info.width;
+                                    current_scale.y = (differentPosition.y + selected_info.height) / selected_info.height;
+                                    if (e.shiftKey) {
+                                        if (current_scale.x > current_scale.y) current_scale.y = current_scale.x;
+                                        else current_scale.x = current_scale.y;
+                                    }
+                                    $(`#${choosen_id},#resize_wrap`).css(
+                                        'transform',
+                                        `translate(${selected_info.x + selected_info.width}px,${selected_info.y + selected_info.height}px) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x + selected_info.width}px,-${selected_info.y + selected_info.height}px)`
+                                    );
+                                }
+                                else if (resize_angle == "resize_ne") {
+                                    differentPosition.y = selected_info.y - current_position.y;
+                                    differentPosition.x = current_position.x - (selected_info.x + selected_info.width);
+                                    current_scale.x = (differentPosition.x + selected_info.width) / selected_info.width;
+                                    current_scale.y = (differentPosition.y + selected_info.height) / selected_info.height;
+                                    if (e.shiftKey) {
+                                        if (current_scale.x > current_scale.y) current_scale.y = current_scale.x;
+                                        else current_scale.x = current_scale.y;
+                                    }
+                                    $(`#${choosen_id},#resize_wrap`).css(
+                                        'transform',
+                                        `translate(${selected_info.x}px,${selected_info.y + selected_info.height}px) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x}px,-${selected_info.y + selected_info.height}px)`
+                                    );
+                                }
+                                else if (resize_angle == "resize_sw") {
+                                    differentPosition.y = current_position.y - (selected_info.y + selected_info.height);
+                                    differentPosition.x = selected_info.x - current_position.x;
+                                    current_scale.x = (differentPosition.x + selected_info.width) / selected_info.width;
+                                    current_scale.y = (differentPosition.y + selected_info.height) / selected_info.height;
+                                    if (e.shiftKey) {
+                                        if (current_scale.x > current_scale.y) current_scale.y = current_scale.x;
+                                        else current_scale.x = current_scale.y;
+                                    }
+                                    $(`#${choosen_id},#resize_wrap`).css(
+                                        'transform',
+                                        `translate(${selected_info.x + selected_info.width}px,${selected_info.y}px) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x + selected_info.width}px,-${selected_info.y}px)`
+                                    );
+                                }
+                            }
+
                         }
                         break;
-                    case "text":        // Text
-                    
+                    case "text":        // Textbox
+
                         break;
                     case "rect":        // Rectangle
                         if (!id) {
@@ -258,18 +311,12 @@ let app = new Vue({
                         if (!id) {
                             cursorPosition = newPoint ? { x: newPoint.x, y: newPoint.y } : { x: current_position.x, y: current_position.y };
                             id = uuidv4();
-                            // startLine(id,cursorPosition,app.color,app.size);
-                            // con.invoke("StartLine",id,cursorPosition,app.color,app.size);
                         }
                         let tempCurrent = { x: current_position.x, y: current_position.y };
                         let pointLA = null;
-                        // newPoint ? newPath.setAttribute('d', `M${cursorPosition.x},${cursorPosition.y},L${newPoint.x},${newPoint.y}`) :
-                        //     newPath.setAttribute('d', `M${cursorPosition.x},${cursorPosition.y},L${current_position.x},${current_position.y}`);
                         newPoint ? pointLA = newPoint : pointLA = tempCurrent;
                         drawLine(id, cursorPosition, pointLA, app.color, app.size);
                         con.invoke('DrawLine', id, cursorPosition, pointLA, app.color, app.size);
-                        // drawLine(id, pointLA);
-                        // con.invoke('DrawLine', id, pointLA);
                         break;
                     default:
                         break;
@@ -291,19 +338,24 @@ let app = new Vue({
                         draw(id, midPoint, coordinates[2]);
                         con.invoke("Draw", id, midPoint, coordinates[2]);
                     }
+                    if (id != null)
+                        undoList.push({ mode: 'create', object: $(`#${id}`)[0] });
                     id = null;
                     coordinates = [];
                     break;
                 case "cursor":      // Move
-                    if (choosen_id) {
-                        const selected_css_value = $(`#${choosen_id}`).css('transform').split(',');
+                    const change = $(`#${choosen_id}`).css('transform')
 
-                        if (drag && selected_css_value != "none") {
-                            position = { x: parseFloat(selected_css_value[4]), y: parseFloat(selected_css_value[5]) };
+                    if (choosen_id && change != "none") {
+                        const selected_css_value = change.match(/matrix.*\((.+)\)/)[1].split(', ').map(parseFloat);
+
+                        if (drag && selected_css_value) {       // drag
+                            position = { x: selected_css_value[4], y: selected_css_value[5] };
 
                             switch (e.target.tagName) {
                                 case 'path':
                                     let new_coord;
+
                                     if (e.target.classList.contains("straightLine")) {
                                         const coord = $(`#${choosen_id}`).attr('d').substring(1).split("L");
                                         for (let i of coord) {
@@ -333,35 +385,154 @@ let app = new Vue({
                                     $(`#${choosen_id}`).attr('x', Number($(`#${choosen_id}`).attr('x')) + position.x);
                                     $(`#${choosen_id}`).attr('y', Number($(`#${choosen_id}`).attr('y')) + position.y);
                                     break;
-
-
                                 case 'ellipse':
                                     $(`#${choosen_id}`).attr('cx', Number($(`#${choosen_id}`).attr('cx')) + position.x);
                                     $(`#${choosen_id}`).attr('cy', Number($(`#${choosen_id}`).attr('cy')) + position.y);
                                     break;
-
-
                                 case 'image':
                                     break;
 
                                 default:
                                     break;
                             }
-                            $(`#${choosen_id}`).removeAttr('style');
-
-                            selected_border($(`#${choosen_id}`)[0].getBBox());
-                            $("#resize_wrap").removeAttr('style');
                         }
+                        else if (resize && selected_css_value) {        // resize
+                            let scale = { x: selected_css_value[0], y: selected_css_value[3] }
+
+                            switch ($(`#${choosen_id}`)[0].tagName) {
+                                case 'path':
+                                    let new_coord, initial_position;
+
+                                    if (e.target.classList.contains("straightLine")) {
+                                        const coord = $(`#${choosen_id}`).attr('d').substring(1).split("L");
+                                        for (let i of coord) {
+                                            let coord_xy = i.split(",").map(parseFloat);
+                                            !new_coord ?
+                                                new_coord = `M${(coord_xy[0] * scale.x).toFixed(2)},${(coord_xy[1] * scale.y).toFixed(2)}` :
+                                                new_coord += `L${(coord_xy[0] * scale.x).toFixed(2)},${(coord_xy[1] * scale.y).toFixed(2)}`;
+                                        }
+                                    }
+                                    else {
+                                        const coord = $(`#${choosen_id}`).attr('d').substring(1).split("Q");
+
+                                        for (let i of coord) {
+                                            let coord_xy = i.split(",").map(parseFloat);
+                                            if (!initial_position) initial_position = { x: coord_xy[0], y: coord_xy[1] };
+                                            else switch (resize_angle) {
+                                                case "resize_e": case "resize_s": case "resize_se":
+                                                    initial_position = { x: Math.min(initial_position.x, coord_xy[0], coord_xy[2]), y: Math.min(initial_position.y, coord_xy[1], coord_xy[3]) };
+                                                    break;
+                                                case "resize_w": case "resize_n": case "resize_nw":
+                                                    initial_position = { x: Math.max(initial_position.x, coord_xy[0], coord_xy[2]), y: Math.max(initial_position.y, coord_xy[1], coord_xy[3]) };
+                                                    break;
+                                                case "reesize_ne":
+                                                    initial_position = { x: Math.min(initial_position.x, coord_xy[0], coord_xy[2]), y: Math.max(initial_position.y, coord_xy[1], coord_xy[3]) };
+                                                    break;
+                                                case "resize_sw":
+                                                    initial_position = { x: Math.max(initial_position.x, coord_xy[0], coord_xy[2]), y: Math.min(initial_position.y, coord_xy[1], coord_xy[3]) };
+                                                    break;
+                                            }
+                                        }
+
+                                        initial_position = { x: initial_position.x * scale.x - initial_position.x, y: initial_position.y * scale.y - initial_position.y };
+
+                                        for (let i of coord) {
+                                            let coord_xy = i.split(",").map(parseFloat);
+                                            !new_coord ?
+                                                new_coord = `M${(coord_xy[0] * scale.x - initial_position.x).toFixed(2)},${(coord_xy[1] * scale.y - initial_position.y).toFixed(2)}` :
+                                                new_coord += `Q${(coord_xy[0] * scale.x - initial_position.x).toFixed(2)},${(coord_xy[1] * scale.y - initial_position.y).toFixed(2)},${(coord_xy[2] * scale.x - initial_position.x).toFixed(2)},${(coord_xy[3] * scale.y - initial_position.y).toFixed(2)}`;
+                                        }
+                                    }
+                                    $(`#${choosen_id}`).attr('d', new_coord);
+                                    break;
+                                case 'rect':
+                                    const rect_info = $(`#${choosen_id}`)[0].getBBox();
+
+                                    if (resize_angle == "resize_w" || resize_angle == "resize_sw")
+                                        rect_info.x = rect_info.x - (rect_info.width * scale.x - rect_info.width);
+                                    else if (resize_angle == "resize_n" || resize_angle == "resize_ne")
+                                        rect_info.y = rect_info.y - (rect_info.height * scale.y - rect_info.height);
+                                    else if (resize_angle == "resize_nw") {
+                                        rect_info.x = rect_info.x - (rect_info.width * scale.x - rect_info.width);
+                                        rect_info.y = rect_info.y - (rect_info.height * scale.y - rect_info.height);
+                                    }
+
+                                    $(`#${choosen_id}`).attr('x', rect_info.x + position.x)
+                                        .attr('y', rect_info.y + position.y)
+                                        .attr('width', rect_info.width * scale.x)
+                                        .attr('height', rect_info.height * scale.y);
+                                    break;
+                                case 'ellipse':
+                                    const ellipse_info = $(`#${choosen_id}`)[0].getBBox();
+                                    let circle = { cx: ellipse_info.x + (ellipse_info.width / 2), cy: ellipse_info.y + (ellipse_info.height / 2), rx: ellipse_info.width / 2, ry: ellipse_info.height / 2 };
+
+                                    switch (resize_angle) {
+                                        case "resize_e":
+                                            circle.rx = ellipse_info.width * scale.x / 2;
+                                            circle.cx = ellipse_info.x + circle.rx;
+                                            break;
+                                        case "resize_s":
+                                            circle.ry = ellipse_info.height * scale.y / 2;
+                                            circle.cy = ellipse_info.y + circle.ry;
+                                            break;
+                                        case "resize_se":
+                                            circle.rx = ellipse_info.width * scale.x / 2;
+                                            circle.ry = ellipse_info.height * scale.y / 2;
+                                            circle.cx = ellipse_info.x + circle.rx;
+                                            circle.cy = ellipse_info.y + circle.ry;
+                                            break;
+                                        case "resize_w":
+                                            circle.rx = ellipse_info.width * scale.x / 2;
+                                            circle.cx = ellipse_info.x + ellipse_info.width - circle.rx;
+                                            break;
+                                        case "resize_n":
+                                            circle.ry = ellipse_info.height * scale.y / 2;
+                                            circle.cy = ellipse_info.y + ellipse_info.height - circle.ry;
+                                            break;
+                                        case "resize_nw":
+                                            circle.rx = ellipse_info.width * scale.x / 2;
+                                            circle.ry = ellipse_info.height * scale.y / 2;
+                                            circle.cx = ellipse_info.x + ellipse_info.width - circle.rx;
+                                            circle.cy = ellipse_info.y + ellipse_info.height - circle.ry;
+                                            break;
+                                        case "resize_ne":
+                                            circle.rx = ellipse_info.width * scale.x / 2;
+                                            circle.ry = ellipse_info.height * scale.y / 2;
+                                            circle.cx = ellipse_info.x + circle.rx;
+                                            circle.cy = ellipse_info.y + ellipse_info.height - circle.ry;
+                                            break;
+                                        case "resize_sw":
+                                            circle.rx = ellipse_info.width * scale.x / 2;
+                                            circle.ry = ellipse_info.height * scale.y / 2;
+                                            circle.cx = ellipse_info.x + ellipse_info.width - circle.rx;
+                                            circle.cy = ellipse_info.y + circle.ry;
+                                            break;
+                                    }
+
+                                    $(`#${choosen_id}`).attr('cx', circle.cx).attr('cy', circle.cy)
+                                        .attr('rx', circle.rx).attr('ry', circle.ry);
+                                    break;
+                                case 'image':
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                        $(`#${choosen_id},#resize_wrap`).removeAttr('style');
+                        selected_border($(`#${choosen_id}`)[0].getBBox());
                     }
-                    cursorPosition = position = null;
-                    drag = false;
+                    current_scale = { x: 1, y: 1 };
+                    differentPosition = cursorPosition = {}
+                    position = { x: 0, y: 0 };
+                    drag = resize = false;
                     break;
-                case "text":        // Text
+                case "text":        // Textbox
 
                     break;
                 case "rect":        // Rectangle
                     if (e.type == "pointerup")
                         newPath = differentPosition = cursorPosition = id = null;
+
                     break;
                 case "circle":      // Circle
                     if (e.type == "pointerup")
@@ -370,8 +541,6 @@ let app = new Vue({
                 case "line":        // Line
                     if (e.type == "pointerup") {
                         if (cursorPosition) {
-                            // points.push(cursorPosition);
-                            // points.push({ x: current_position.x, y: current_position.y });
                             let newPoint = { x: current_position.x, y: current_position.y };
                             // Update hub point
                             pushPoint(cursorPosition);
@@ -402,16 +571,15 @@ let app = new Vue({
 
         // Delete selected object
         $(document).on('keydown', function (e) {
-            if (e.keyCode == 8 || e.keyCode == 46 && choosen_id) {
+            if (choosen_id && e.keyCode == 8 || e.keyCode == 46) {
                 $(`#${choosen_id}`).remove();
                 unselect();
-            }
-        });
-
-        // Reset
-        $("svg").click(function (e) {
-            if (e.target.tagName != "path" && choosen_id && e.target.tagName != "rect" && e.target.tagName != "ellipse" && e.target.tagname != "text" && e.target.tagName != "image") {
-                unselect();
+            } else if (e.ctrlKey && e.keyCode == '90' && !e.originalEvent.repeat) {
+                console.log('undo');
+                undo();
+            } else if (e.ctrlKey && e.keyCode == '89' && !e.originalEvent.repeat) {
+                console.log('redo');
+                redo();
             }
         });
     }
@@ -425,11 +593,6 @@ let fps;
 
 function unselect() {
     if (choosen_id) {
-        // $(`#${choosen_id}`).removeAttr("class");
-
-        // If want delete certain class
-        // $(`#${choosen_id}`).removeClass("class");
-
         $("#resize_wrap").removeAttr('style').hide();
         choosen_id = null;
     }
@@ -460,6 +623,7 @@ function update(timeStamp) {
 function mid(a, b) {
     return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
 }
+
 function startDraw(id, point, color, size) {
     let path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute('id', id);
@@ -510,16 +674,23 @@ function drawCircle(id, point, box) {
 function drawLine(id, point, point2, color, size) {
     let path = $(`#${id}`)[0];
     if (!path) {
-        path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path = document.createElementNS("http://www.w3.org/2000/svg", "line");
         path.setAttribute('id', id);
-        path.setAttribute('class', "straightLine");
+        // path.setAttribute('class', "straightLine");
         path.setAttribute('stroke', color);
         path.setAttribute('stroke-width', size);
+        path.setAttribute('x1', simplifyNumber(point.x));
+        path.setAttribute('y1', simplifyNumber(point.y));
     }
-    path.setAttribute('d', `M${simplifyNumber(point.x)},${simplifyNumber(point.y)},L${simplifyNumber(point2.x)},${simplifyNumber(point2.y)}`);
+    path.setAttribute('x2', simplifyNumber(point2.x));
+    path.setAttribute('y2', simplifyNumber(point2.y));
+
+    // path.setAttribute('d', `M${simplifyNumber(point.x)},${simplifyNumber(point.y)},L${simplifyNumber(point2.x)},${simplifyNumber(point2.y)}`);
+
     $("svg#draw").append(path);
 }
-function pushPoint(point){
+
+function pushPoint(point) {
     points.push(point);
 }
 
@@ -534,6 +705,65 @@ function startText(id, x, y, color, size) {
     text.textContent = "Type Something";
     $('svg#draw').append(text);
 }
+
+// Remove object
+function remove(id) {
+    $(`#${id}`).remove();
+    // Call server to remove the id
+    // undoList.push({id,method:"remove"});
+}
+function removeAll() {
+    $('svg#draw > :not("#resize_wrap")').remove();
+}
+function create(object) {
+    $('svg#draw').append(object);
+}
+// Undo event trigger
+function undo() {  // Everytime will push {event:,object:}  
+
+    if (undoList.length == 0) return;
+    let object = undoList.pop();
+    undoReplace(object)
+
+    redoList.push(object);
+
+
+}
+// Redo event trigger
+function redo() {
+
+    if (redoList.length == 0) return;
+    let temp = redoList.pop();
+    undoList.push(temp);
+
+}
+function undoReplace(temp) {
+    let tempId = $(temp.object).attr('id');
+    if (temp.mode == 'new') {
+        remove(tempId);
+    }
+    else if (temp.mode == 'move') {
+
+    } else if (temp.mode == 'remove') {
+        create(temp.object);
+    } else {
+        console.log("Unknown");
+    }
+}
+function redoReplace(temp) {
+    let tempId = $(temp.object).attr('id');
+    if (temp.mode == 'new') {
+        create(temp.object);
+    }
+    else if (temp.mode == 'move') {
+
+    } else if (temp.mode == 'remove') {
+
+    } else {
+        console.log("Unknown");
+    }
+}
+
 
 function simplifyNumber(n) {
     if (!$.isNumeric(n)) return;
@@ -592,19 +822,7 @@ con.on('StartRect', startRect);
 con.on('DrawRect', drawRect);
 con.on('StartCircle', startCircle);
 con.on('DrawCircle', drawCircle);
-// con.on('StartLine', startLine);
 con.on('DrawLine', drawLine);
-con.on('PushPoint',pushPoint);
-// con.on('ReceiveLine', drawLine);
-// con.on('ReceiveCurve', drawCurve);
-// con.on('ReceiveImage', drawImage);
-// con.on('ReceiveClear', clear);
-// con.on('ReceiveCommands', async commands => {
-//     for (let cmd of commands) {
-//         await window[cmd.name](...cmd.param);
-//         await sleep(1);
-//     }
-// });
-
+con.on('PushPoint', pushPoint);
 
 con.start().then(e => $('#main').show());
