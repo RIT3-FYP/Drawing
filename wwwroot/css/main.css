@@ -126,6 +126,11 @@ svg {
     z-index: 999;
 }
 
+#line_x1, #line_x2 {
+    stroke: blue;
+    fill: blue;
+}
+
 svg#draw #resize_wrap * {
     vector-effect: non-scaling-stroke;
 }

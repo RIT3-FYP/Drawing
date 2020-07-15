@@ -41,7 +41,7 @@ let app = new Vue({
 
     },
     created() {
-        $("#resize_wrap").hide();
+        $("#resize_wrap,#line_edit").hide();
     },
     mounted() {
         let coordinates = [];
@@ -74,8 +74,8 @@ let app = new Vue({
                         unselect();
                         break;
                     case "cursor":      // Move
-                        let resize_target = ["resize_nw", "resize_n", "resize_ne", "resize_e", "resize_se", "resize_s", "resize_sw", "resize_w"];
-                        let drag_target = ["path", "rect", "ellipse", "text", "image"];
+                        let resize_target = ["resize_nw", "resize_n", "resize_ne", "resize_e", "resize_se", "resize_s", "resize_sw", "resize_w", "line_x1", "line_x2"];
+                        let drag_target = ["path", "rect", "ellipse", "text", "image", "line"];
 
                         if (resize_target.includes(e.target.id) && choosen_id) {
                             resize_angle = e.target.id;
@@ -83,9 +83,10 @@ let app = new Vue({
                             resize = true;
                         }
                         else if (drag_target.includes(e.target.tagName) && !resize_target.includes(e.target.id) && e.target.id != "resize_border" && !e.target.classList.contains("notMoveable")) {
+                            unselect();
                             choosen_id = e.target.id;
-                            $('#resize_wrap').show();
-                            selected_border($(`#${choosen_id}`)[0].getBBox());
+                            if (e.target.tagName == "line") selected_border({ x1: $(`#${choosen_id}`).attr('x1'), x2: $(`#${choosen_id}`).attr('x2'), y1: $(`#${choosen_id}`).attr('y1'), y2: $(`#${choosen_id}`).attr('y2') }, true);
+                            else selected_border($(`#${choosen_id}`)[0].getBBox());
                             cursorPosition = current_position;
                             drag = true;
                         }
@@ -141,7 +142,7 @@ let app = new Vue({
                         if (!choosen_id) break;
 
                         if (drag) {
-                            $(`#${choosen_id},#resize_wrap`).css('transform',
+                            $(`#${choosen_id},#resize_wrap,#line_edit`).css('transform',
                                 `translate(${current_position.x - cursorPosition.x}px,${current_position.y - cursorPosition.y}px)`
                             );
                         }
@@ -236,6 +237,18 @@ let app = new Vue({
                                         'transform',
                                         `translate(${selected_info.x + selected_info.width}px,${selected_info.y}px) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x + selected_info.width}px,-${selected_info.y}px)`
                                     );
+                                }
+                                else if (resize_angle == "line_x1") {
+                                    let newPoint = comparePoint(current_position);
+                                    cursorPosition = newPoint ? { x: newPoint.x, y: newPoint.y } : { x: current_position.x, y: current_position.y };
+                                    $(`#${choosen_id}`).attr("x1", cursorPosition.x).attr("y1", cursorPosition.y);
+                                    selected_border({ x1: $(`#${choosen_id}`).attr('x1'), x2: $(`#${choosen_id}`).attr('x2'), y1: $(`#${choosen_id}`).attr('y1'), y2: $(`#${choosen_id}`).attr('y2') }, true);
+                                }
+                                else if (resize_angle == "line_x2") {
+                                    let newPoint = comparePoint(current_position);
+                                    cursorPosition = newPoint ? { x: newPoint.x, y: newPoint.y } : { x: current_position.x, y: current_position.y };
+                                    $(`#${choosen_id}`).attr("x2", cursorPosition.x).attr("y2", cursorPosition.y);
+                                    selected_border({ x1: $(`#${choosen_id}`).attr('x1'), x2: $(`#${choosen_id}`).attr('x2'), y1: $(`#${choosen_id}`).attr('y1'), y2: $(`#${choosen_id}`).attr('y2') }, true);
                                 }
                             }
 
@@ -354,47 +367,36 @@ let app = new Vue({
                         if (drag && selected_css_value) {       // drag
                             position = { x: selected_css_value[4], y: selected_css_value[5] };
 
-                            switch (e.target.tagName) {
+                            switch ($(`#${choosen_id}`)[0].tagName) {
                                 case 'path':
                                     let new_coord;
-
-                                    if (e.target.classList.contains("straightLine")) {
-                                        const coord = $(`#${choosen_id}`).attr('d').substring(1).split("L");
-                                        for (let i of coord) {
-                                            let coord_xy = i.split(",");
-                                            if ($.isNumeric(coord_xy[0]) && $.isNumeric(coord_xy[1])) {
-                                                !new_coord ?
-                                                    new_coord = `M${(parseFloat(coord_xy[0]) + position.x).toFixed(2)},${(parseFloat(coord_xy[1]) + position.y).toFixed(2)},` :
-                                                    new_coord += `L${(parseFloat(coord_xy[0]) + position.x).toFixed(2)},${(parseFloat(coord_xy[1]) + position.y).toFixed(2)}`;
-                                            }
-                                        }
-                                    }
-                                    else {
-                                        const coord = $(`#${choosen_id}`).attr('d').substring(1).split("Q");
-                                        let i
-                                        for (i of coord) {
-                                            let coord_xy = i.split(",");
-                                            if ($.isNumeric(coord_xy[0]) && $.isNumeric(coord_xy[1])) {
-                                                !new_coord ?
-                                                    new_coord = `M${(parseFloat(coord_xy[0]) + position.x).toFixed(2)},${(parseFloat(coord_xy[1]) + position.y).toFixed(2)}` :
-                                                    new_coord += `Q${(parseFloat(coord_xy[0]) + position.x).toFixed(2)},${(parseFloat(coord_xy[1]) + position.y).toFixed(2)},${(parseFloat(coord_xy[2]) + position.x).toFixed(2)},${(parseFloat(coord_xy[3]) + position.y).toFixed(2)}`;
-                                            }
-                                        }
+                                    const coord = $(`#${choosen_id}`).attr('d').substring(1).split("Q");
+                                    let i
+                                    for (i of coord) {
+                                        let coord_xy = i.split(",").map(parseFloat);
+                                        !new_coord ?
+                                            new_coord = `M${simplifyNumber(coord_xy[0] + position.x)},${simplifyNumber(coord_xy[1] + position.y)}` :
+                                            new_coord += `Q${simplifyNumber(coord_xy[0] + position.x)},${simplifyNumber(coord_xy[1] + position.y)},${simplifyNumber(coord_xy[2] + position.x)},${simplifyNumber(coord_xy[3] + position.y)}`;
                                     }
                                     $(`#${choosen_id}`).attr('d', new_coord);
                                     break;
                                 case 'rect':
-                                    $(`#${choosen_id}`).attr('x', Number($(`#${choosen_id}`).attr('x')) + position.x);
-                                    $(`#${choosen_id}`).attr('y', Number($(`#${choosen_id}`).attr('y')) + position.y);
+                                    $(`#${choosen_id}`).attr('x', Number($(`#${choosen_id}`).attr('x')) + position.x)
+                                        .attr('y', Number($(`#${choosen_id}`).attr('y')) + position.y);
                                     break;
                                 case 'ellipse':
-                                    $(`#${choosen_id}`).attr('cx', Number($(`#${choosen_id}`).attr('cx')) + position.x);
-                                    $(`#${choosen_id}`).attr('cy', Number($(`#${choosen_id}`).attr('cy')) + position.y);
+                                    $(`#${choosen_id}`).attr('cx', Number($(`#${choosen_id}`).attr('cx')) + position.x)
+                                        .attr('cy', Number($(`#${choosen_id}`).attr('cy')) + position.y);
                                     break;
                                 case 'image':
                                     break;
-
-                                default:
+                                case 'line':
+                                    $(`#${choosen_id}`).attr('x1', Number($(`#${choosen_id}`).attr('x1')) + position.x)
+                                        .attr('x2', Number($(`#${choosen_id}`).attr('x2')) + position.x)
+                                        .attr('y1', Number($(`#${choosen_id}`).attr('y1')) + position.y)
+                                        .attr('y2', Number($(`#${choosen_id}`).attr('y2')) + position.y);
+                                    selected_border({ x1: $(`#${choosen_id}`).attr('x1'), x2: $(`#${choosen_id}`).attr('x2'), y1: $(`#${choosen_id}`).attr('y1'), y2: $(`#${choosen_id}`).attr('y2') }, true);
+                                    $("#line_edit").removeAttr('style');
                                     break;
                             }
                         }
@@ -404,46 +406,34 @@ let app = new Vue({
                             switch ($(`#${choosen_id}`)[0].tagName) {
                                 case 'path':
                                     let new_coord, initial_position;
+                                    const coord = $(`#${choosen_id}`).attr('d').substring(1).split("Q");
 
-                                    if (e.target.classList.contains("straightLine")) {
-                                        const coord = $(`#${choosen_id}`).attr('d').substring(1).split("L");
-                                        for (let i of coord) {
-                                            let coord_xy = i.split(",").map(parseFloat);
-                                            !new_coord ?
-                                                new_coord = `M${(coord_xy[0] * scale.x).toFixed(2)},${(coord_xy[1] * scale.y).toFixed(2)}` :
-                                                new_coord += `L${(coord_xy[0] * scale.x).toFixed(2)},${(coord_xy[1] * scale.y).toFixed(2)}`;
+                                    for (let i of coord) {
+                                        let coord_xy = i.split(",").map(parseFloat);
+                                        if (!initial_position) initial_position = { x: coord_xy[0], y: coord_xy[1] };
+                                        else switch (resize_angle) {
+                                            case "resize_e": case "resize_s": case "resize_se":
+                                                initial_position = { x: Math.min(initial_position.x, coord_xy[0], coord_xy[2]), y: Math.min(initial_position.y, coord_xy[1], coord_xy[3]) };
+                                                break;
+                                            case "resize_w": case "resize_n": case "resize_nw":
+                                                initial_position = { x: Math.max(initial_position.x, coord_xy[0], coord_xy[2]), y: Math.max(initial_position.y, coord_xy[1], coord_xy[3]) };
+                                                break;
+                                            case "resize_ne":
+                                                initial_position = { x: Math.min(initial_position.x, coord_xy[0], coord_xy[2]), y: Math.max(initial_position.y, coord_xy[1], coord_xy[3]) };
+                                                break;
+                                            case "resize_sw":
+                                                initial_position = { x: Math.max(initial_position.x, coord_xy[0], coord_xy[2]), y: Math.min(initial_position.y, coord_xy[1], coord_xy[3]) };
+                                                break;
                                         }
                                     }
-                                    else {
-                                        const coord = $(`#${choosen_id}`).attr('d').substring(1).split("Q");
 
-                                        for (let i of coord) {
-                                            let coord_xy = i.split(",").map(parseFloat);
-                                            if (!initial_position) initial_position = { x: coord_xy[0], y: coord_xy[1] };
-                                            else switch (resize_angle) {
-                                                case "resize_e": case "resize_s": case "resize_se":
-                                                    initial_position = { x: Math.min(initial_position.x, coord_xy[0], coord_xy[2]), y: Math.min(initial_position.y, coord_xy[1], coord_xy[3]) };
-                                                    break;
-                                                case "resize_w": case "resize_n": case "resize_nw":
-                                                    initial_position = { x: Math.max(initial_position.x, coord_xy[0], coord_xy[2]), y: Math.max(initial_position.y, coord_xy[1], coord_xy[3]) };
-                                                    break;
-                                                case "reesize_ne":
-                                                    initial_position = { x: Math.min(initial_position.x, coord_xy[0], coord_xy[2]), y: Math.max(initial_position.y, coord_xy[1], coord_xy[3]) };
-                                                    break;
-                                                case "resize_sw":
-                                                    initial_position = { x: Math.max(initial_position.x, coord_xy[0], coord_xy[2]), y: Math.min(initial_position.y, coord_xy[1], coord_xy[3]) };
-                                                    break;
-                                            }
-                                        }
+                                    initial_position = { x: initial_position.x * scale.x - initial_position.x, y: initial_position.y * scale.y - initial_position.y };
 
-                                        initial_position = { x: initial_position.x * scale.x - initial_position.x, y: initial_position.y * scale.y - initial_position.y };
-
-                                        for (let i of coord) {
-                                            let coord_xy = i.split(",").map(parseFloat);
-                                            !new_coord ?
-                                                new_coord = `M${(coord_xy[0] * scale.x - initial_position.x).toFixed(2)},${(coord_xy[1] * scale.y - initial_position.y).toFixed(2)}` :
-                                                new_coord += `Q${(coord_xy[0] * scale.x - initial_position.x).toFixed(2)},${(coord_xy[1] * scale.y - initial_position.y).toFixed(2)},${(coord_xy[2] * scale.x - initial_position.x).toFixed(2)},${(coord_xy[3] * scale.y - initial_position.y).toFixed(2)}`;
-                                        }
+                                    for (let i of coord) {
+                                        let coord_xy = i.split(",").map(parseFloat);
+                                        !new_coord ?
+                                            new_coord = `M${(coord_xy[0] * scale.x - initial_position.x).toFixed(2)},${(coord_xy[1] * scale.y - initial_position.y).toFixed(2)}` :
+                                            new_coord += `Q${(coord_xy[0] * scale.x - initial_position.x).toFixed(2)},${(coord_xy[1] * scale.y - initial_position.y).toFixed(2)},${(coord_xy[2] * scale.x - initial_position.x).toFixed(2)},${(coord_xy[3] * scale.y - initial_position.y).toFixed(2)}`;
                                     }
                                     $(`#${choosen_id}`).attr('d', new_coord);
                                     break;
@@ -516,13 +506,11 @@ let app = new Vue({
                                     break;
                                 case 'image':
                                     break;
-                                default:
-                                    break;
                             }
                         }
                         object2 = $(`#${choosen_id}`).clone()[0];
                         undoList.push({ mode: 'move', object1: object1, object2: object2 });
-                        selected_border($(`#${choosen_id}`)[0].getBBox());
+                        if ($(`#${choosen_id}`).prop("tagName") != "line") selected_border($(`#${choosen_id}`)[0].getBBox());
                     }
                     current_scale = { x: 1, y: 1 };
                     differentPosition = cursorPosition = {}
@@ -533,19 +521,18 @@ let app = new Vue({
 
                     break;
                 case "rect":        // Rectangle
-                if (e.type == "pointerup") {
-                    if (id != null)
-                        undoList.push({ mode: 'new', object: $(`#${id}`).clone()[0] });
-                    newPath = differentPosition = cursorPosition = id = null;
-                }
-
+                    if (e.type == "pointerup") {
+                        if (id != null)
+                            undoList.push({ mode: 'new', object: $(`#${id}`).clone()[0] });
+                        newPath = differentPosition = cursorPosition = id = null;
+                    }
                     break;
                 case "circle":      // Circle
-                if (e.type == "pointerup") {
-                    if (id != null)
-                        undoList.push({ mode: 'new', object: $(`#${id}`).clone()[0] });
-                    newPath = differentPosition = cursorPosition = id = null;
-                }
+                    if (e.type == "pointerup") {
+                        if (id != null)
+                            undoList.push({ mode: 'new', object: $(`#${id}`).clone()[0] });
+                        newPath = differentPosition = cursorPosition = id = null;
+                    }
                     break;
                 case "line":        // Line
                     if (e.type == "pointerup") {
@@ -608,7 +595,7 @@ let fps;
 
 function unselect() {
     if (choosen_id) {
-        $("#resize_wrap").removeAttr('style').hide();
+        $("#resize_wrap,#line_edit").removeAttr('style').hide();
         choosen_id = null;
     }
 }
@@ -775,7 +762,7 @@ function redo() {
     console.log(temp.mode);
     let tempId = $(temp.object).attr('id');
     if (temp.mode == 'new') {
-        create(temp.object);    
+        create(temp.object);
         // let pp = $(temp.object1)[0].innerHTML;
         // console.log(pp);
         // con.invoke('Create', JSON.stringify(temp.object));
@@ -806,16 +793,24 @@ function simplifyNumber(n) {
 }
 
 // Reset selected border coordinate
-function selected_border(selected_info) {
-    $("#resize_border").attr("x", selected_info.x - 5).attr("y", selected_info.y - 5).attr("width", selected_info.width + 10).attr("height", selected_info.height + 10);
-    $("#resize_nw").attr("x", selected_info.x - 10).attr("y", selected_info.y - 10).css("cursor", "nw-resize");
-    $("#resize_n").attr("x", selected_info.x + (selected_info.width / 2) - 5).attr("y", selected_info.y - 10).css("cursor", "n-resize");
-    $("#resize_ne").attr("x", selected_info.x + selected_info.width).attr("y", selected_info.y - 10).css("cursor", "ne-resize");
-    $("#resize_e").attr("x", selected_info.x + selected_info.width).attr("y", selected_info.y + (selected_info.height / 2) - 5).css("cursor", "e-resize");
-    $("#resize_se").attr("x", selected_info.x + selected_info.width).attr("y", selected_info.y + selected_info.height).css("cursor", "se-resize");
-    $("#resize_s").attr("x", selected_info.x + (selected_info.width / 2) - 5).attr("y", selected_info.y + selected_info.height).css("cursor", "s-resize");
-    $("#resize_sw").attr("x", selected_info.x - 10).attr("y", selected_info.y + selected_info.height).css("cursor", "sw-resize");
-    $("#resize_w").attr("x", selected_info.x - 10).attr("y", selected_info.y + (selected_info.height / 2) - 5).css("cursor", "w-resize");
+function selected_border(selected_info, line = false) {
+    if (!line) {
+        $('#resize_wrap').show();
+        $("#resize_border").attr("x", selected_info.x - 5).attr("y", selected_info.y - 5).attr("width", selected_info.width + 10).attr("height", selected_info.height + 10);
+        $("#resize_nw").attr("x", selected_info.x - 10).attr("y", selected_info.y - 10).css("cursor", "nw-resize");
+        $("#resize_n").attr("x", selected_info.x + (selected_info.width / 2) - 5).attr("y", selected_info.y - 10).css("cursor", "n-resize");
+        $("#resize_ne").attr("x", selected_info.x + selected_info.width).attr("y", selected_info.y - 10).css("cursor", "ne-resize");
+        $("#resize_e").attr("x", selected_info.x + selected_info.width).attr("y", selected_info.y + (selected_info.height / 2) - 5).css("cursor", "e-resize");
+        $("#resize_se").attr("x", selected_info.x + selected_info.width).attr("y", selected_info.y + selected_info.height).css("cursor", "se-resize");
+        $("#resize_s").attr("x", selected_info.x + (selected_info.width / 2) - 5).attr("y", selected_info.y + selected_info.height).css("cursor", "s-resize");
+        $("#resize_sw").attr("x", selected_info.x - 10).attr("y", selected_info.y + selected_info.height).css("cursor", "sw-resize");
+        $("#resize_w").attr("x", selected_info.x - 10).attr("y", selected_info.y + (selected_info.height / 2) - 5).css("cursor", "w-resize");
+    }
+    else {
+        $("#line_edit").show();
+        $("#line_x1").attr("x", selected_info.x1 - 5).attr("y", selected_info.y1 - 5).css("cursor", "move");
+        $("#line_x2").attr("x", selected_info.x2 - 5).attr("y", selected_info.y2 - 5).css("cursor", "move");
+    }
 }
 
 function uuidv4() { // ID generator
