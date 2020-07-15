@@ -242,12 +242,20 @@ let app = new Vue({
                                     let newPoint = comparePoint(current_position);
                                     cursorPosition = newPoint ? { x: newPoint.x, y: newPoint.y } : { x: current_position.x, y: current_position.y };
                                     $(`#${choosen_id}`).attr("x1", cursorPosition.x).attr("y1", cursorPosition.y);
+                                    con.invoke('MoveObject', 'line', {
+                                        id: choosen_id,
+                                        x1: $(`#${choosen_id}`).attr('x1'), y1: $(`#${choosen_id}`).attr('y1')
+                                    });
                                     selected_border({ x1: $(`#${choosen_id}`).attr('x1'), x2: $(`#${choosen_id}`).attr('x2'), y1: $(`#${choosen_id}`).attr('y1'), y2: $(`#${choosen_id}`).attr('y2') }, true);
                                 }
                                 else if (resize_angle == "line_x2") {
                                     let newPoint = comparePoint(current_position);
                                     cursorPosition = newPoint ? { x: newPoint.x, y: newPoint.y } : { x: current_position.x, y: current_position.y };
                                     $(`#${choosen_id}`).attr("x2", cursorPosition.x).attr("y2", cursorPosition.y);
+                                    con.invoke('MoveObject', 'line', {
+                                        id: choosen_id,
+                                        x2: $(`#${choosen_id}`).attr('x2'), y2: $(`#${choosen_id}`).attr('y2')
+                                    });
                                     selected_border({ x1: $(`#${choosen_id}`).attr('x1'), x2: $(`#${choosen_id}`).attr('x2'), y1: $(`#${choosen_id}`).attr('y1'), y2: $(`#${choosen_id}`).attr('y2') }, true);
                                 }
                             }
@@ -353,8 +361,8 @@ let app = new Vue({
                     }
                     if (id != null)
                         undoList.push({ mode: 'new', object: $(`#${id}`).clone()[0] });
-                    id = null;
-                    coordinates = [];
+                    // id = null;
+                    // coordinates = [];
                     break;
                 case "cursor":      // Move
                     const change = $(`#${choosen_id}`).css('transform')
@@ -378,15 +386,18 @@ let app = new Vue({
                                             new_coord = `M${simplifyNumber(coord_xy[0] + position.x)},${simplifyNumber(coord_xy[1] + position.y)}` :
                                             new_coord += `Q${simplifyNumber(coord_xy[0] + position.x)},${simplifyNumber(coord_xy[1] + position.y)},${simplifyNumber(coord_xy[2] + position.x)},${simplifyNumber(coord_xy[3] + position.y)}`;
                                     }
+                                    con.invoke('MoveObject', 'path', { id: choosen_id, d: new_coord });
                                     $(`#${choosen_id}`).attr('d', new_coord);
                                     break;
                                 case 'rect':
                                     $(`#${choosen_id}`).attr('x', Number($(`#${choosen_id}`).attr('x')) + position.x)
                                         .attr('y', Number($(`#${choosen_id}`).attr('y')) + position.y);
+                                    con.invoke('MoveObject', 'rect', { id: choosen_id, x: $(`#${choosen_id}`).attr('x'), y: $(`#${choosen_id}`).attr('y') });
                                     break;
                                 case 'ellipse':
                                     $(`#${choosen_id}`).attr('cx', Number($(`#${choosen_id}`).attr('cx')) + position.x)
                                         .attr('cy', Number($(`#${choosen_id}`).attr('cy')) + position.y);
+                                    con.invoke('MoveObject', 'ellipse', { id: choosen_id, cx: $(`#${choosen_id}`).attr('cx'), cy: $(`#${choosen_id}`).attr('cy') });
                                     break;
                                 case 'image':
                                     break;
@@ -397,6 +408,10 @@ let app = new Vue({
                                         .attr('y2', Number($(`#${choosen_id}`).attr('y2')) + position.y);
                                     selected_border({ x1: $(`#${choosen_id}`).attr('x1'), x2: $(`#${choosen_id}`).attr('x2'), y1: $(`#${choosen_id}`).attr('y1'), y2: $(`#${choosen_id}`).attr('y2') }, true);
                                     $("#line_edit").removeAttr('style');
+                                    con.invoke('MoveObject', 'line', {
+                                        id: choosen_id, x1: $(`#${choosen_id}`).attr('x1'), y1: $(`#${choosen_id}`).attr('y1'),
+                                        x2: $(`#${choosen_id}`).attr('x2'), y2: $(`#${choosen_id}`).attr('y2')
+                                    });
                                     break;
                             }
                         }
@@ -436,6 +451,7 @@ let app = new Vue({
                                             new_coord += `Q${(coord_xy[0] * scale.x - initial_position.x).toFixed(2)},${(coord_xy[1] * scale.y - initial_position.y).toFixed(2)},${(coord_xy[2] * scale.x - initial_position.x).toFixed(2)},${(coord_xy[3] * scale.y - initial_position.y).toFixed(2)}`;
                                     }
                                     $(`#${choosen_id}`).attr('d', new_coord);
+                                    con.invoke('MoveObject', 'path', { id: choosen_id, d: new_coord });
                                     break;
                                 case 'rect':
                                     const rect_info = $(`#${choosen_id}`)[0].getBBox();
@@ -453,6 +469,11 @@ let app = new Vue({
                                         .attr('y', rect_info.y + position.y)
                                         .attr('width', rect_info.width * scale.x)
                                         .attr('height', rect_info.height * scale.y);
+                                    con.invoke('MoveObject', 'rect', {
+                                        id: choosen_id,
+                                        x: $(`#${choosen_id}`).attr('x'), y: $(`#${choosen_id}`).attr('y'),
+                                        width: $(`#${choosen_id}`).attr('width'), height: $(`#${choosen_id}`).attr('height')
+                                    });
                                     break;
                                 case 'ellipse':
                                     const ellipse_info = $(`#${choosen_id}`)[0].getBBox();
@@ -503,12 +524,18 @@ let app = new Vue({
 
                                     $(`#${choosen_id}`).attr('cx', circle.cx).attr('cy', circle.cy)
                                         .attr('rx', circle.rx).attr('ry', circle.ry);
+                                    con.invoke('MoveObject', 'ellipse', {
+                                        id: choosen_id,
+                                        cx: $(`#${choosen_id}`).attr('cx'), cy: $(`#${choosen_id}`).attr('cy'),
+                                        rx: $(`#${choosen_id}`).attr('rx'), ry: $(`#${choosen_id}`).attr('ry')
+                                    });
                                     break;
                                 case 'image':
                                     break;
                             }
                         }
                         object2 = $(`#${choosen_id}`).clone()[0];
+
                         undoList.push({ mode: 'move', object1: object1, object2: object2 });
                         if ($(`#${choosen_id}`).prop("tagName") != "line") selected_border($(`#${choosen_id}`)[0].getBBox());
                     }
@@ -524,14 +551,14 @@ let app = new Vue({
                     if (e.type == "pointerup") {
                         if (id != null)
                             undoList.push({ mode: 'new', object: $(`#${id}`).clone()[0] });
-                        newPath = differentPosition = cursorPosition = id = null;
+                        // newPath = differentPosition = cursorPosition = id = null;
                     }
                     break;
                 case "circle":      // Circle
                     if (e.type == "pointerup") {
                         if (id != null)
                             undoList.push({ mode: 'new', object: $(`#${id}`).clone()[0] });
-                        newPath = differentPosition = cursorPosition = id = null;
+                        // newPath = differentPosition = cursorPosition = id = null;
                     }
                     break;
                 case "line":        // Line
@@ -546,8 +573,33 @@ let app = new Vue({
                         }
                         if (id != null)
                             undoList.push({ mode: 'new', object: $(`#${id}`).clone()[0] });
-                        newPath = cursorPosition = current_position = id = null;
+                        // newPath = cursorPosition =current_position = id = null;
                     }
+                    break;
+                default:
+                    break;
+            }
+        });
+
+        $(document).on('pointerup', e => {
+            e.preventDefault();
+
+            switch (app.type) {
+                case 'line':
+                    cursorPosition = {};
+                    newPath = id = null;
+                    break;
+                case 'rect':
+                    differentPosition = cursorPosition = {};
+                    newPath = id = null;
+                    break;
+                case 'pen':
+                    id = null;
+                    coordinates = [];
+                    break;
+                case 'circle':
+                    differentPosition = cursorPosition = {};
+                    newPath = id = null;
                     break;
                 default:
                     break;
@@ -687,7 +739,6 @@ function drawLine(id, point, point2, color, size) {
     path.setAttribute('x2', simplifyNumber(point2.x));
     path.setAttribute('y2', simplifyNumber(point2.y));
 
-    // path.setAttribute('d', `M${simplifyNumber(point.x)},${simplifyNumber(point.y)},L${simplifyNumber(point2.x)},${simplifyNumber(point2.y)}`);
 
     $("svg#draw").append(path);
 }
@@ -711,14 +762,54 @@ function startText(id, x, y, color, size) {
 // Remove object
 function remove(id) {
     $(`#${id}`).remove();
-    // Call server to remove the id
-    // undoList.push({id,method:"remove"});
 }
 function removeAll() {
     $('svg#draw > :not("#resize_wrap")').remove();
 }
 function create(object) {
+    console.log(object);
     $('svg#draw').append(object);
+}
+//id,d,x1,y1,x2,y2
+function moveObject(tag, object) {
+    let id = object.id;
+    switch (tag) {
+        case 'path':
+            $(`#${object.id}`).attr('d', object.d);
+            break;
+        case 'ellipse':
+            if (object.cx && object.cy) {
+                $(`#${object.id}`).attr('cx', object.cx);
+                $(`#${object.id}`).attr('cy', object.cy);
+            }
+            if (object.rx && object.ry) {
+                $(`#${object.id}`).attr('rx', object.rx);
+                $(`#${object.id}`).attr('ry', object.ry);
+            }
+            break;
+        case 'rect':
+            if (object.x && object.y) {
+                $(`#${object.id}`).attr('x', object.x);
+                $(`#${object.id}`).attr('y', object.y);
+            }
+            if (object.width && object.height) {
+                $(`#${object.id}`).attr('width', object.width);
+                $(`#${object.id}`).attr('height', object.height);
+            }
+            break;
+        case 'line':
+            if (object.x1 && object.y1) {
+                $(`#${object.id}`).attr('x1', object.x1);
+                $(`#${object.id}`).attr('y1', object.y1);
+            }
+            if (object.x2 && object.y2) {
+                $(`#${object.id}`).attr('x2', object.x2);
+                $(`#${object.id}`).attr('y2', object.y2);
+            }
+            break;
+        default:
+            break;
+    }
 }
 // Undo event trigger
 function undo() {  // Everytime will push {event:,object:}  
@@ -735,23 +826,19 @@ function undo() {  // Everytime will push {event:,object:}
         if (firstId == secondId) {
             remove(firstId);
             con.invoke('Remove', firstId);
-
             create(temp.object1);
-            // con.invoke('Create',JSON.stringify(temp.object1));
-
+            con.invoke('Create', getString(temp.object1));
         }
     } else if (temp.mode == 'remove') {
         remove(tempId);
         create(temp.object);
-        // con.invoke('Create', JSON.stringify(temp.object));
-
-
+        con.invoke('Create', getString(temp.object));
     } else {
         console.log("Unknown");
     }
     redoList.push(temp);
-
 }
+
 /*when  */
 // Redo event trigger
 function redo() {
@@ -763,9 +850,8 @@ function redo() {
     let tempId = $(temp.object).attr('id');
     if (temp.mode == 'new') {
         create(temp.object);
-        // let pp = $(temp.object1)[0].innerHTML;
-        // console.log(pp);
-        // con.invoke('Create', JSON.stringify(temp.object));
+        let p = getString(temp.object);
+        con.invoke('Create', getString(temp.object).replace(/\"/gi, "\'"));
     }
     else if (temp.mode == 'move') {
         let firstId = $(temp.object1).attr('id');
@@ -774,8 +860,7 @@ function redo() {
             remove(firstId);
             con.invoke('Remove', firstId);
             create(temp.object2);
-            // con.invoke('Create', JSON.stringify(temp.object2));
-
+            con.invoke('Create', getString(temp.object2));
         }
     } else if (temp.mode == 'remove') {
         remove(tempId);
@@ -785,6 +870,81 @@ function redo() {
     }
     undoList.push(temp);
 }
+function createObject(stringObject) {
+    let tempObject = new DOMParser().parseFromString(stringObject, "image/svg+xml").firstChild;
+    let newObject = $(tempObject);
+    let tag = newObject.prop('tagName');
+    switch (tag) {
+        case 'path':
+            let path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute('id', newObject.attr('id'));
+            path.setAttribute('d', newObject.attr('d'));
+            path.setAttribute("stroke", newObject.attr('stroke'));
+            path.setAttribute("stroke-width", newObject.attr('stroke-width'));
+            $('svg#draw').append(path);
+
+            break;
+        case 'ellipse':
+            let circle = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+            circle.setAttribute('id', newObject.attr('id'));
+            circle.setAttribute('cx', newObject.attr('cx'));
+            circle.setAttribute('cy', newObject.attr('cy'));
+            circle.setAttribute('rx', newObject.attr('rx'));
+            circle.setAttribute('ry', newObject.attr('ry'));
+            circle.setAttribute('stroke', newObject.attr('stroke'));
+            circle.setAttribute('stroke-width', newObject.attr('stroke-width'));
+            $('svg#draw').append(circle);
+            break;
+
+        case 'rect':
+            let rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            rect.setAttribute('id', newObject.attr('id'));
+            rect.setAttribute("stroke", newObject.attr('id'));
+            rect.setAttribute("stroke-width", newObject.attr('id'));
+            rect.setAttribute('x', newObject.attr('x'));
+            rect.setAttribute('y', newObject.attr('y'));
+            rect.setAttribute('width', newObject.attr('width'));
+            rect.setAttribute('height', newObject.attr('height'));
+            $('svg#draw').append(rect);
+
+            break;
+
+        case 'line':
+            let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.setAttribute('id', newObject.attr('id'));
+            line.setAttribute('stroke', newObject.attr('stroke'));
+            line.setAttribute('stroke-width', newObject.attr('stroke-width'));
+            line.setAttribute('x1', newObject.attr('x1'));
+            line.setAttribute('y1', newObject.attr('y1'));
+            line.setAttribute('x1', newObject.attr('x2'));
+            line.setAttribute('y1', newObject.attr('y2'));
+            $('svg#draw').append(line);
+
+            break;
+
+
+        default:
+
+            break;
+
+    }
+}
+// Convert the DOM to string
+var getString = (function () {
+    var DIV = document.createElement("div");
+
+    if ('outerHTML' in DIV)
+        return function (node) {
+            return node.outerHTML;
+        };
+
+    return function (node) {
+        var div = DIV.cloneNode();
+        div.appendChild(node.cloneNode(true));
+        return div.innerHTML;
+    };
+
+})();
 
 
 function simplifyNumber(n) {
@@ -857,6 +1017,7 @@ con.on('PushPoint', pushPoint);
 
 con.on('Remove', remove);
 con.on('RemoveAll', removeAll);
-con.on('Create', create);
+con.on('MoveObject', moveObject);
+con.on('Create', createObject);
 
 con.start().then(e => $('#main').show());

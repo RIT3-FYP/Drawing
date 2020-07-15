@@ -114,6 +114,9 @@ namespace Drawing
         {
             await Clients.Others.SendAsync("Create", obj);
         }
+        public async Task MoveObject(string id, Object obj){
+             await Clients.Others.SendAsync("MoveObject",id, obj);
+        }
         public override async Task OnConnectedAsync()
         {
             await base.OnConnectedAsync();

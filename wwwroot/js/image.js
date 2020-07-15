@@ -59,7 +59,7 @@ function crop(f, w, h, to = 'blob', type = 'image/jpeg') {
 
 // PURPOSE: Best-fit image within the width and height specified (no upscale)
 function fit(f, w, h, to = 'blob', type = 'image/jpeg') {
-    return new Promise((resolve, reject) => { 
+    return new Promise((resolve, reject) => {
         const img = document.createElement('img');
         
         img.onload = e => {
