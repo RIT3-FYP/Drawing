@@ -21,9 +21,9 @@ namespace Drawing
          public int NoOfUsers { get; set; }
          public bool IsEmpty => NoOfUsers == 0;
 
-        public void AddUser()
+        public void AddUser(User user)
         {          
-            NoOfUsers++;
+            
         }
      }
 
@@ -153,7 +153,7 @@ namespace Drawing
             string roomId = Context.GetHttpContext().Request.Query["roomId"];
 
             Room room = rooms.Find(r => r.Id == roomId);
-            if (room == null)
+            if (roomId == null)
             {
                 await Clients.Caller.SendAsync("Reject");
             }
@@ -212,6 +212,7 @@ namespace Drawing
             User newUser = new User(id, name);
             await Groups.AddToGroupAsync(id, roomId);
             //await Clients.Group(roomId).SendAsync("Ready", newUser);
+            room.NoOfUsers++;
             await UpdateList();
         }
 
@@ -222,7 +223,7 @@ namespace Drawing
             switch (page)
             {
                 case "list": ListDisconnected(); break;
-                case "game": await RoomDisconnected(); break;
+                case "draw": await RoomDisconnected(); break;
             }
 
             await base.OnDisconnectedAsync(exception);
@@ -245,9 +246,9 @@ namespace Drawing
                 return;
             }
 
-            if(room.NoOfUsers == room.NoOfUsers-1){
-                await Clients.Group(roomId).SendAsync("Left", id);
-            }
+            string username = Context.GetHttpContext().Request.Query["name"];
+            await Clients.Group(roomId).SendAsync("Left", $"<b>{username}</b> left");
+            room.NoOfUsers--;
 
             if (room.IsEmpty)
             {

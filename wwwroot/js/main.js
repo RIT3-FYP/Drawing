@@ -997,8 +997,13 @@ function cursorPoint(evt) {     // Get point in global SVG space
 
 
 /* ==================================== Hub Configuration ====================================== */
-const param = $.param({ page: 'draw' });
-
+const name = sessionStorage.getItem('name');
+const roomId = new URL(location).searchParams.get('roomId');
+if (!roomId) {
+    location = 'list.html';
+    throw 'ERROR: Invalid game id';
+}
+const param = $.param({ page: 'draw',  name, roomId });
 const con = new signalR.HubConnectionBuilder()
     .withUrl('/hub?' + param )
     .build();
@@ -1007,6 +1012,17 @@ con.onclose(err => {
     alert("Disconnect");
     location = 'main.html';
 });
+
+con.on('Reject', () => location = 'list.html');
+$('#leave').click(e => location = 'list.html');
+
+con.on('Left', status => {
+    $('#main').append(`
+        <li class="status">
+            <div>${status}</div>
+        </li>
+    `);
+})
 
 con.on('StartDraw', startDraw);
 con.on('Draw', draw);

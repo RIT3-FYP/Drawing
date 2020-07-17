@@ -54,7 +54,7 @@
         $('tbody').on('click', '[data-join]', e => {
             let roomId = $(e.target).data('join');
             location = `index.html?roomId=${roomId}`;
-        } );
+        });
 
         // ========================================================================================
         // Connect
@@ -71,15 +71,13 @@
             location = 'main.html';
         });
 
-        con.on('Reject', () => location = 'list.html');
-
         con.on('UpdateList', list => {
             let html = '';
-
+            //room.id should replace with room.name
             for (let room of list) {
                 html += `
                     <tr>
-                        <td>$${room.id}</td>
+                        <td>$${room.id}</td>   
                         <td><button data-join="${room.id}">Join</button></td>
                     </tr>
                 `;

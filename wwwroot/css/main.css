@@ -166,3 +166,11 @@ svg#draw > line {
     stroke-linecap: round;
     vector-effect: non-scaling-stroke;
 }
+
+#join li.status {
+    text-align: center;
+}
+
+#join li.status div {
+    background-color: #ffd54f;
+}
