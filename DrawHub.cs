@@ -19,7 +19,6 @@ namespace Drawing
          public string Id { get; set; } = Guid.NewGuid().ToString();
          public string Name { get; set; } = "ROOM" + Guid.NewGuid().ToString();
          public int NoOfUsers { get; set; }
-         public bool IsWaiting { get; set; } = false;
          public bool IsEmpty => NoOfUsers == 0;
 
         public void AddUser()
@@ -36,7 +35,6 @@ namespace Drawing
         public string CreateRoom()
         {
             var room = new Room();
-            room.IsWaiting = true;
             rooms.Add(room);
             return room.Id;
         }
@@ -167,7 +165,7 @@ namespace Drawing
         // Update Room List
         private async Task UpdateList(string id = null)
         {
-            var list = rooms.FindAll(g => g.IsWaiting);
+            var list = rooms;
 
             if (id == null)
             {
