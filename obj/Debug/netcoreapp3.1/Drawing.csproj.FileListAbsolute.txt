@@ -1,3 +1,8 @@
+C:\Users\JANE\Desktop\TARC\BACSy3s1\Web\Drawing\obj\Debug\netcoreapp3.1\Drawing.csprojAssemblyReference.cache
+C:\Users\JANE\Desktop\TARC\BACSy3s1\Web\Drawing\obj\Debug\netcoreapp3.1\Drawing.AssemblyInfoInputs.cache
+C:\Users\JANE\Desktop\TARC\BACSy3s1\Web\Drawing\obj\Debug\netcoreapp3.1\Drawing.AssemblyInfo.cs
+C:\Users\JANE\Desktop\TARC\BACSy3s1\Web\Drawing\obj\Debug\netcoreapp3.1\Drawing.csproj.CoreCompileInputs.cache
+C:\Users\JANE\Desktop\TARC\BACSy3s1\Web\Drawing\obj\Debug\netcoreapp3.1\Drawing.MvcApplicationPartsAssemblyInfo.cache
 C:\Users\JANE\Desktop\TARC\BACSy3s1\Web\Drawing\bin\Debug\netcoreapp3.1\appsettings.Development.json
 C:\Users\JANE\Desktop\TARC\BACSy3s1\Web\Drawing\bin\Debug\netcoreapp3.1\appsettings.json
 C:\Users\JANE\Desktop\TARC\BACSy3s1\Web\Drawing\bin\Debug\netcoreapp3.1\Properties\launchSettings.json
@@ -7,11 +12,6 @@ C:\Users\JANE\Desktop\TARC\BACSy3s1\Web\Drawing\bin\Debug\netcoreapp3.1\Drawing.
 C:\Users\JANE\Desktop\TARC\BACSy3s1\Web\Drawing\bin\Debug\netcoreapp3.1\Drawing.runtimeconfig.dev.json
 C:\Users\JANE\Desktop\TARC\BACSy3s1\Web\Drawing\bin\Debug\netcoreapp3.1\Drawing.dll
 C:\Users\JANE\Desktop\TARC\BACSy3s1\Web\Drawing\bin\Debug\netcoreapp3.1\Drawing.pdb
-C:\Users\JANE\Desktop\TARC\BACSy3s1\Web\Drawing\obj\Debug\netcoreapp3.1\Drawing.csprojAssemblyReference.cache
-C:\Users\JANE\Desktop\TARC\BACSy3s1\Web\Drawing\obj\Debug\netcoreapp3.1\Drawing.AssemblyInfoInputs.cache
-C:\Users\JANE\Desktop\TARC\BACSy3s1\Web\Drawing\obj\Debug\netcoreapp3.1\Drawing.AssemblyInfo.cs
-C:\Users\JANE\Desktop\TARC\BACSy3s1\Web\Drawing\obj\Debug\netcoreapp3.1\Drawing.csproj.CoreCompileInputs.cache
-C:\Users\JANE\Desktop\TARC\BACSy3s1\Web\Drawing\obj\Debug\netcoreapp3.1\Drawing.MvcApplicationPartsAssemblyInfo.cache
 C:\Users\JANE\Desktop\TARC\BACSy3s1\Web\Drawing\obj\Debug\netcoreapp3.1\Drawing.RazorTargetAssemblyInfo.cache
 C:\Users\JANE\Desktop\TARC\BACSy3s1\Web\Drawing\obj\Debug\netcoreapp3.1\staticwebassets\Drawing.StaticWebAssets.Manifest.cache
 C:\Users\JANE\Desktop\TARC\BACSy3s1\Web\Drawing\obj\Debug\netcoreapp3.1\staticwebassets\Drawing.StaticWebAssets.xml

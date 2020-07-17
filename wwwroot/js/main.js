@@ -997,13 +997,15 @@ function cursorPoint(evt) {     // Get point in global SVG space
 
 
 /* ==================================== Hub Configuration ====================================== */
+const param = $.param({ page: 'draw' });
+
 const con = new signalR.HubConnectionBuilder()
-    .withUrl('/hub')
+    .withUrl('/hub?' + param )
     .build();
 
 con.onclose(err => {
     alert("Disconnect");
-    location = '/';
+    location = 'main.html';
 });
 
 con.on('StartDraw', startDraw);

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drawing</title>
+    <link rel="shortcut icon" href="favicon.png" type="image/png">
+</head>
+<body>
+    <main>
+        <p><button id="create" disabled>Create Room</button></p>
+
+        <p>You are : <b id="you"></b></p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Room Names</th>
+                    <th>Join Room</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="2">No rooms, why not create one? :)</td></tr>
+            </tbody>
+        </table>
+    </main>
+
+    <script src="js/jquery.min.js"></script>
+    <script src="js/signalr.js"></script>
+    <script>
+        // ========================================================================================
+        // General
+        // ========================================================================================
+
+        const name = sessionStorage.getItem('name');
+        if (!name) {
+            location = 'main.html';
+            throw 'ERROR: Invalid name';
+        }
+
+        $('#you').text(name);
+
+        // ========================================================================================
+        // Events
+        // ========================================================================================
+
+        //Create room Id
+        $('#create').click(async e => {
+            let roomId = await con.invoke('CreateRoom');
+            location = `index.html?roomId=${roomId}`;
+        });
+        //Redirect to roomId with button
+        $('tbody').on('click', '[data-join]', e => {
+            let roomId = $(e.target).data('join');
+            location = `index.html?roomId=${roomId}`;
+        } );
+
+        // ========================================================================================
+        // Connect
+        // ========================================================================================
+
+        const param = $.param({ page: 'list' });
+
+        const con = new signalR.HubConnectionBuilder()
+                .withUrl('/hub?' + param) // virtual websocket page
+                .build();
+
+        con.onclose(err => {
+            alert('Disconnected');
+            location = 'main.html';
+        });
+
+        con.on('Reject', () => location = 'list.html');
+
+        con.on('UpdateList', list => {
+            let html = '';
+
+            for (let room of list) {
+                html += `
+                    <tr>
+                        <td>$${room.id}</td>
+                        <td><button data-join="${room.id}">Join</button></td>
+                    </tr>
+                `;
+            }
+
+            if (list.length == 0) {
+                html = '<tr><td colspan="2">No rooms, why not create one? :)</td></tr>';
+            }
+            $('tbody').html(html);
+        });
+
+        con.start().then(main);
+
+        function main() {
+            $('#create').prop('disabled', false);
+        }
+    </script>
+</body>
+</html>

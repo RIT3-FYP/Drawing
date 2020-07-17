@@ -5,11 +5,41 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Drawing
 {
+     public class User
+     {
+         public string Id { get; set; }
+         public string Name { get; set; }
 
+         public User(string id, string name) => (Id, Name) = (id, name);
+
+     }
+
+     public class Room
+     {
+         public string Id { get; set; } = Guid.NewGuid().ToString();
+         public string Name { get; set; } = "ROOM" + Guid.NewGuid().ToString();
+         public int NoOfUsers { get; set; }
+         public bool IsWaiting { get; set; } = false;
+         public bool IsEmpty => NoOfUsers == 0;
+
+        public void AddUser()
+        {          
+            NoOfUsers++;
+        }
+     }
 
     // Hub
     public class DrawHub : Hub
     {
+        private static List<Room> rooms = new List<Room>();
+
+        public string CreateRoom()
+        {
+            var room = new Room();
+            room.IsWaiting = true;
+            rooms.Add(room);
+            return room.Id;
+        }
 
         public class Point
         {
@@ -117,13 +147,115 @@ namespace Drawing
         public async Task MoveObject(string id, Object obj){
              await Clients.Others.SendAsync("MoveObject",id, obj);
         }
+        
+        // List and room connection
+
+        public async Task Start()
+        {
+            string roomId = Context.GetHttpContext().Request.Query["roomId"];
+
+            Room room = rooms.Find(r => r.Id == roomId);
+            if (room == null)
+            {
+                await Clients.Caller.SendAsync("Reject");
+            }
+
+            await Clients.Group(roomId).SendAsync("Start");
+                
+        }
+
+        // Update Room List
+        private async Task UpdateList(string id = null)
+        {
+            var list = rooms.FindAll(g => g.IsWaiting);
+
+            if (id == null)
+            {
+                await Clients.All.SendAsync("UpdateList", list);
+            }
+            else
+            {
+                await Clients.Client(id).SendAsync("UpdateList", list);
+            }
+        }
+
         public override async Task OnConnectedAsync()
         {
+            string page = Context.GetHttpContext().Request.Query["page"];
+
+            switch (page)
+            {
+                case "list": await ListConnected(); break;
+                case "draw": await RoomConnected(); break;
+            }
+
             await base.OnConnectedAsync();
         }
+
+        private async Task ListConnected()
+        {
+            string id = Context.ConnectionId;
+            await UpdateList(id);
+        }
+
+        private async Task RoomConnected()
+        {
+            string id = Context.ConnectionId;
+            string name = Context.GetHttpContext().Request.Query["name"];
+            string roomId = Context.GetHttpContext().Request.Query["roomId"];
+
+            Room room = rooms.Find(r => r.Id == roomId);
+            if (room == null)
+            {
+                await Clients.Caller.SendAsync("Reject");
+                return;
+            }
+
+            User newUser = new User(id, name);
+            await Groups.AddToGroupAsync(id, roomId);
+            //await Clients.Group(roomId).SendAsync("Ready", newUser);
+            await UpdateList();
+        }
+
         public override async Task OnDisconnectedAsync(Exception exception)
         {
+            string page = Context.GetHttpContext().Request.Query["page"];
+
+            switch (page)
+            {
+                case "list": ListDisconnected(); break;
+                case "game": await RoomDisconnected(); break;
+            }
+
             await base.OnDisconnectedAsync(exception);
+        }
+
+        private void ListDisconnected()
+        {
+            // Nothing
+        }
+
+        private async Task RoomDisconnected()
+        {
+            string id     = Context.ConnectionId;
+            string roomId = Context.GetHttpContext().Request.Query["roomId"];
+
+            Room room = rooms.Find(r => r.Id == roomId);
+            if (room == null)
+            {
+                await Clients.Caller.SendAsync("Reject");
+                return;
+            }
+
+            if(room.NoOfUsers == room.NoOfUsers-1){
+                await Clients.Group(roomId).SendAsync("Left", id);
+            }
+
+            if (room.IsEmpty)
+            {
+                rooms.Remove(room);
+                await UpdateList();
+            }
         }
     }
 }

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drawing</title>
+    <link rel="shortcut icon" href="favicon.png" type="image/png">
+</head>
+<body>
+    <main>
+        <p>Select icon and enter name :</p>
+
+        <form>
+            <input id="name" placeholder="Name" autocomplete="off" autofocus>
+            <button>OK</button>
+        </form>
+    </main>
+    <script src="js/jquery.min.js"></script>
+    <script>   
+        $('form').submit(e => {
+            e.preventDefault();
+
+            let name = $('#name').val().trim();
+
+            if (name) {
+                sessionStorage.setItem('name', name);
+                location = 'list.html';
+            }
+
+            $('#name').val('').focus();
+        });
+        
+    </script>
+</body>
+</html> 
