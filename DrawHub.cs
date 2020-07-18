@@ -211,6 +211,8 @@ namespace Drawing
 
             User newUser = new User(id, name);
             await Groups.AddToGroupAsync(id, roomId);
+            string username = Context.GetHttpContext().Request.Query["name"];
+            await Clients.Group(roomId).SendAsync("Left", $"<b>{username}</b> joined");
             //await Clients.Group(roomId).SendAsync("Ready", newUser);
             room.NoOfUsers++;
             await UpdateList();

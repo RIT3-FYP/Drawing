@@ -1,30 +1,25 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\JANE\\Desktop\\TARC\\BACSy3s1\\Web\\Drawing\\Drawing.csproj": {}
+    "C:\\Users\\nchen\\Desktop\\Drawing\\Drawing.csproj": {}
   },
   "projects": {
-    "C:\\Users\\JANE\\Desktop\\TARC\\BACSy3s1\\Web\\Drawing\\Drawing.csproj": {
+    "C:\\Users\\nchen\\Desktop\\Drawing\\Drawing.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\JANE\\Desktop\\TARC\\BACSy3s1\\Web\\Drawing\\Drawing.csproj",
+        "projectUniqueName": "C:\\Users\\nchen\\Desktop\\Drawing\\Drawing.csproj",
         "projectName": "Drawing",
-        "projectPath": "C:\\Users\\JANE\\Desktop\\TARC\\BACSy3s1\\Web\\Drawing\\Drawing.csproj",
-        "packagesPath": "C:\\Users\\JANE\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\JANE\\Desktop\\TARC\\BACSy3s1\\Web\\Drawing\\obj\\",
+        "projectPath": "C:\\Users\\nchen\\Desktop\\Drawing\\Drawing.csproj",
+        "packagesPath": "C:\\Users\\nchen\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\nchen\\Desktop\\Drawing\\obj\\",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
-        ],
         "configFilePaths": [
-          "C:\\Users\\JANE\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+          "C:\\Users\\nchen\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "netcoreapp3.1"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
