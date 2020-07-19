@@ -8,16 +8,41 @@ namespace Drawing
      public class User
      {
          public string Id { get; set; }
+
+         public string Color{get;set;}
          public string Name { get; set; }
 
          public User(string id, string name) => (Id, Name) = (id, name);
 
      }
+     public class DrawObject{
+         public string Tag { get; set; }
+         public string Id { get; set; }
+         public string Color { get; set; }
+         public int Size { get; set; }
+         public Point Point1 { get; set; }
+         public Point Point2 { get; set; }
+         public string Fill{get;set;}  = "none";
+
+         public DrawObject(string tag,string id,string color,int size,Point p1, Point p2,string fill) => (Tag,Id,Color,Size,Point1,Point2,Fill) = (tag,id,color,size,p1,p2,fill);
+         public DrawObject(string tag,string id,string color,int size,Point p1, Point p2) => (Tag,Id,Color,Size,Point1,Point2,Fill) = (tag,id,color,size,p1,p2,"none");
+
+
+     }
+     public class Point
+        {
+            public double X { get; set; }
+            public double Y { get; set; }
+        }
+
 
      public class Room
      {
          public string Id { get; set; } = Guid.NewGuid().ToString();
          public string Name { get; set; } = "ROOM" + Guid.NewGuid().ToString();
+
+        public List<User> Users{ get; set;}
+         public List<DrawObject> drawObject { get; set; }
          public int NoOfUsers { get; set; }
          public bool IsEmpty => NoOfUsers == 0;
 
@@ -39,11 +64,7 @@ namespace Drawing
             return room.Id;
         }
 
-        public class Point
-        {
-            public double X { get; set; }
-            public double Y { get; set; }
-        }
+        
         // Class needed
         // public class DrawObject
         // {
@@ -93,10 +114,10 @@ namespace Drawing
         // }
         private static List<Command> commands = new List<Command>();
 
-        public async Task StartDraw(string id, Point point, string color, string size)
+        public async Task StartDraw(string id, Point point, string color, string size, string fill)
         {
             // commands.Add(new Command("startDraw", new Object[] { id, point, color, size }));
-            await Clients.Others.SendAsync("StartDraw", id, point, color, size);
+            await Clients.Others.SendAsync("StartDraw", id, point, color, size, fill);
         }
         public async Task Draw(string id, Point pointA, Point pointB)
         {
@@ -104,17 +125,17 @@ namespace Drawing
             await Clients.Others.SendAsync("Draw", id, pointA, pointB);
         }
 
-        public async Task StartRect(string id, Point point, string color, string size)
+        public async Task StartRect(string id, Point point, string color, string size, string fill)
         {
-            await Clients.Others.SendAsync("StartRect", id, point, color, size);
+            await Clients.Others.SendAsync("StartRect", id, point, color, size, fill);
         }
         public async Task DrawRect(string id, Point point, Point box)
         {
             await Clients.Others.SendAsync("DrawRect", id, point, box);
         }
-        public async Task StartCircle(string id, Point point, string color, string size)
+        public async Task StartCircle(string id, Point point, string color, string size, string fill)
         {
-            await Clients.Others.SendAsync("StartCircle", id, point, color, size);
+            await Clients.Others.SendAsync("StartCircle", id, point, color, size, fill);
         }
         public async Task DrawCircle(string id, Point point, Point box)
         {
@@ -128,6 +149,10 @@ namespace Drawing
         public async Task PushPoint(Point point)
         {
             await Clients.Others.SendAsync("PushPoint", point);
+        }
+        public async Task PopPoint(Point point)
+        {
+            await Clients.Others.SendAsync("PopPoint", point);
         }
 
         public async Task Remove(string id)
@@ -145,6 +170,13 @@ namespace Drawing
         public async Task MoveObject(string id, Object obj){
              await Clients.Others.SendAsync("MoveObject",id, obj);
         }
+
+        public async Task InsertImage(string id, string url,Point point1,Point point2){
+             await Clients.Others.SendAsync("InsertImage",id, url,point1,point2);
+        }
+        // public async Task PointerCursor(Point point){
+        //      await Clients.Others.SendAsync("PointerCursor",point);
+        // }
         
         // List and room connection
 

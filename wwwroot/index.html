@@ -1,10 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-<!-- Target
-1) Resize and movable
-2) Add Shape
-3) Add textbox-->
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -37,6 +32,7 @@
 
             Colour : <input type="color" id="color" list="colors">
             <datalist id="colors">
+                <option value="#ffffff">
                 <option value="#ff0000">
                 <option value="#ffa500">
                 <option value="#ffff00">
@@ -45,12 +41,12 @@
                 <option value="#4b0082">
                 <option value="#ee82ee">
                 <option value="#000000">
-                <option value="#ffffff">
                 <option value="#999999">
             </datalist>
 
-            Fill : <input type="color" id="fill" list="colors2">
-            <datalist id="colors">
+            Fill : <input type="color" id="fill" list="colors2" value="#ffffff">
+            <datalist id="colors2">
+                <option value="#ffffff">
                 <option value="#ff0000">
                 <option value="#ffa500">
                 <option value="#ffff00">
@@ -59,7 +55,6 @@
                 <option value="#4b0082">
                 <option value="#ee82ee">
                 <option value="#000000">
-                <option value="#ffffff">
                 <option value="#999999">
             </datalist>
         </div>
@@ -74,10 +69,6 @@
                     <input type="radio" name="type" value="cursor" onclick="menu(this.value)">
                     <span class="material-icons">open_with</span>
                 </label>
-                <label id="text" title="textbox">
-                    <input type="radio" name="type" value="text" onclick="menu(this.value)" >
-                    <span class="material-icons">title</span>
-                </label>
                 <label id="rect" title="rectangle">
                     <input type="radio" name="type" value="rect" onclick="menu(this.value)" >
                     <span class="material-icons">crop_5_4</span>
@@ -91,7 +82,7 @@
                     <span class="material-icons">horizontal_rule</span>
                 </label>
                 <label id="upload" title="upload">
-                    <input type="file" name="file" hidden>
+                    <input id="file" type="file" name="file" hidden>
                     <span class="material-icons">cloud_upload</span>
                 </label>
                 <label id="save" title="save">
@@ -101,8 +92,8 @@
             </div>
         </div>
 
-        <div id="content">
-            <svg id="grid_wrap" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <svg id="content" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+            <svg x="10" y="10" id="grid_wrap" width="1052" height="744">
                 <defs>
                     <pattern id="smallGrid" width="8" height="8" patternUnits="userSpaceOnUse">
                         <path d="M8,0L0,0,0,8" fill="none" stroke="#cccccc" stroke-width="0.5" />
@@ -113,39 +104,17 @@
                     </pattern>
                 </defs>
 
-                <rect width="100%" height="100%" fill="url(#grid)" />
+                <rect width="100%" height="100%" fill="white" />
+                <rect id="bg_grid" width="500%" height="500%" fill="url(#grid)" />
             </svg>
-            <svg id="draw" viewBox="0 0 1052 744">
-                <g id="resize_wrap">
-                    <rect id="resize_border" class='notMoveable' fill="none" stroke="lightblue" stroke-width="1px" />
-                    <rect id="resize_nw" class='notMoveable' width="10" height="10" />
-                    <rect id="resize_n" class='notMoveable' width="10" height="10" />
-                    <rect id="resize_ne" class='notMoveable' width="10" height="10" />
-                    <rect id="resize_e" class='notMoveable' width="10" height="10" />
-                    <rect id="resize_se" class='notMoveable' width="10" height="10" />
-                    <rect id="resize_s" class='notMoveable' width="10" height="10" />
-                    <rect id="resize_sw" class='notMoveable' width="10" height="10" />
-                    <rect id="resize_w" class='notMoveable' width="10" height="10" />
-                </g> 
-                <g id="line_edit">
-                    <rect id="line_x1" class='notMoveable' width="10" height="10" />
-                    <rect id="line_x2" class='notMoveable' width="10" height="10" />
+            <svg x="10" y="10" id="draw" viewBox="0 0 1052 744" fill="white" width="1052" height="744" overflow="hidden">
+                <g>
+                    <rect width="1052" height="744" fill="transparent"></rect>
                 </g>
-                <!-- <script type="application/ecmascript"> <![CDATA[
-                    function circle_click(evt) {
-                      var circle = evt.target;
-                      var currentRadius = circle.getAttribute("r");
-                      if (currentRadius == 100)
-                        circle.setAttribute("r", currentRadius*2);
-                      else
-                        circle.setAttribute("r", currentRadius*0.5);
-                    }
-                  ]]> </script> -->
             </svg>
-        </div>
+        </svg>
     </div>
 
-    <script src="js/jquery.min.js"></script>
     <script src="js/signalr.js"></script>
     <script src="js/image.js"></script>
     <script src="js/main.js"></script>

@@ -2,15 +2,16 @@
 function crop(f, w, h, to = 'blob', type = 'image/jpeg') {
     return new Promise((resolve, reject) => { 
         const img = document.createElement('img');
-        
+        let nw = 0;
+        let nh = 0;
         img.onload = e => {
             URL.revokeObjectURL(img.src);
             
             // Resize algorithm ---------------------------
             let ratio = w / h;
 
-            let nw = img.naturalWidth;
-            let nh = img.naturalHeight;
+             nw = img.naturalWidth;
+             nh = img.naturalHeight;
             let nratio = nw / nh;
 
             let sx, sy, sw, sh;
@@ -42,7 +43,7 @@ function crop(f, w, h, to = 'blob', type = 'image/jpeg') {
             }
             else if (to == 'dataURL') {
                 let dataURL = can.toDataURL(type);
-                resolve(dataURL);
+                resolve({dataURL,nh,nw});
             }
             else {
                 reject('ERROR: Specify blob or dataURL');

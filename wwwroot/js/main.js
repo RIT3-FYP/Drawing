@@ -1,357 +1,316 @@
 "use strict"
 // ================ Global variables =================
-let id = null;
-let undoList = [];   // Push the id with action
-let redoList = [];   // After undo, push the undoList to the redoList
-let choosen_id = null;
-let points = [];   // Used in Draw Line
+let id = null,
+    choosen_id = null;
+let undoList = []; // Push the id with action
+let redoList = []; // After undo, push the undoList to the redoList
+let points = []; // Used in Draw Line
 let newPath; // Currently used to store the boolean whether the thing got or not
-let app = {
-    type: "pen",
-    color: "black",
-    size: "5",
-};
-const as = "";
+let app = { type: "pen", color: "black", size: "5", fill: "transparent" };
 let coordinates = [];
 let resize_angle;
 
 // Coordinate variables
-let cursorPosition = {};
-let differentPosition = {};
-let position = { x: 0, y: 0 };
-let tempPoint1 = {}, tempPoint2 = {};
-let scale = { x: 1.00, y: 1.00 };
-let current_scale = { x: 1.00, y: 1.00 };
+let cursorPosition = {},
+    differentPosition = {},
+    position = { x: 0, y: 0 };
+let tempPoint1 = {},
+    tempPoint2 = {};
+let scale = { x: 1.00, y: 1.00 },
+    current_scale = { x: 1.00, y: 1.00 };
 
 // Flag
-let drag = false;
-let resize = false;
+let drag = false,
+    resize = false,
+    grab = false;
 
-// let menu = document.querySelector('#type');
-// console.log(menu);
-// menu.addEventListener('onchange', function (e) {
-//     console.log("asd");
-//     console.log(e.target.id);
-//     app.type = e.target.id;
-// });
-
-// $query('#size').on('input' function(e) => {
-//     let size = $query('#size').value
-// });
+let svgDraw = $query('svg#draw'); // draw svg
 
 $query('#size').oninput = e => {
     app.size = $query('#size').value;
-    //app.size = document.getElementById('size').value;
-    console.log(app.size);
 };
 
 $query('#color').oninput = e => {
     app.color = $query('#color').value;
-    console.log(app.color);
 };
 
-
-// let svgDraw = document.querySelector('svg#draw');
-let svgDraw = $query('svg#draw');
+$query('#fill').oninput = e => {
+    if ($query('#fill').value == "#ffffff") {
+        app.fill = "transparent";
+    }
+    else {
+        app.fill = $query('#fill').value;
+    }
+}
 
 function menu(value) {
     app.type = value;
-    // selection
     let children = $query('#type').children;
-    for (var i = 0; i < children.length; i++) {
-        children[i].classList.remove('typeActive');
-    }
+    for (let i = 0; i < children.length; i++) children[i].classList.remove('typeActive');
     $query(`#${value}`).classList.add('typeActive');
-    unselect();
+    select();
 }
 
 svgDraw.onpointerdown = svgDraw.onpointerenter = e => {
-    if (e.buttons == 1 && e.isPrimary) {
+    if (e.buttons == 1 && e.isPrimary && !grab) {
         e.preventDefault();
         let current_position = cursorPoint(e);
-
-        if (choosen_id && e.target.tagName == "svg") unselect();
+        if (choosen_id && e.target.tagName == "svg") select();
 
         switch (app.type) {
-            case "pen":         // Draw
-                unselect();
-                break;
-            case "cursor":      // Move
+            case "pen":
+                select();
+                break; // Draw
+            case "cursor": // Move 
                 let resize_target = ["resize_nw", "resize_n", "resize_ne", "resize_e", "resize_se", "resize_s", "resize_sw", "resize_w", "line_x1", "line_x2"];
                 let drag_target = ["path", "rect", "ellipse", "text", "image", "line"];
 
                 if (resize_target.includes(e.target.id) && choosen_id) {
                     resize_angle = e.target.id;
                     cursorPosition = current_position;
-                    // console.log($query(`#${choosen_id}`).getAttribute('stroke'));
                     if ($query(`[id='${choosen_id}']`).tagName == 'line') {
-                        tempPoint1 = {
-                            x: $query(`[id='${choosen_id}']`).getAttribute('x1'),
-                            y: $query(`[id='${choosen_id}']`).getAttribute('y1')
-                        };
-                        tempPoint2 = {
-                            x: $query(`[id='${choosen_id}']`).getAttribute('x2'),
-                            y: $query(`[id='${choosen_id}']`).getAttribute('y2')
-                        };
+                        tempPoint1 = { x: $query(`[id='${choosen_id}']`).getAttribute('x1'), y: $query(`[id='${choosen_id}']`).getAttribute('y1') };
+                        tempPoint2 = { x: $query(`[id='${choosen_id}']`).getAttribute('x2'), y: $query(`[id='${choosen_id}']`).getAttribute('y2') };
                     }
                     drag = false;
                     resize = true;
-                }
-                else if (drag_target.includes(e.target.tagName) && !resize_target.includes(e.target.id) && e.target.id != "resize_border" && !e.target.classList.contains("notMoveable")) {
-                    unselect();
+                } else if (drag_target.includes(e.target.tagName) && !resize_target.includes(e.target.id) && e.target.id != "resize_border" && !e.target.classList.contains("notMoveable")) {
+                    select();
                     choosen_id = e.target.id;
+                    if (!choosen_id) break;
                     if (e.target.tagName == "line") {
-                        tempPoint1 = {
-                            x: $query(`[id='${choosen_id}']`).getAttribute('x1'),
-                            y: $query(`[id='${choosen_id}']`).getAttribute('y1')
-                        };
-                        tempPoint2 = {
-                            x: $query(`[id='${choosen_id}']`).getAttribute('x2'),
-                            y: $query(`[id='${choosen_id}']`).getAttribute('y2')
-                        };
-                        selected_border({ x1: $query(`[id='${choosen_id}']`).getAttribute('x1'), x2: $query(`[id='${choosen_id}']`).getAttribute('x2'), y1: $query(`[id='${choosen_id}']`).getAttribute('y1'), y2: $query(`[id='${choosen_id}']`).getAttribute('y2') }, true);
-
-                    }
-                    else selected_border($query(`[id='${choosen_id}']`).getBBox());
+                        tempPoint1 = { x: $query(`[id='${choosen_id}']`).getAttribute('x1') * 1, y: $query(`[id='${choosen_id}']`).getAttribute('y1') * 1 };
+                        tempPoint2 = { x: $query(`[id='${choosen_id}']`).getAttribute('x2') * 1, y: $query(`[id='${choosen_id}']`).getAttribute('y2') * 1 };
+                        select({ x1: $query(`[id='${choosen_id}']`).getAttribute('x1'), x2: $query(`[id='${choosen_id}']`).getAttribute('x2'), y1: $query(`[id='${choosen_id}']`).getAttribute('y1'), y2: $query(`[id='${choosen_id}']`).getAttribute('y2') }, true);
+                    } else select($query(`[id='${choosen_id}']`).getBBox());
                     cursorPosition = current_position;
                     resize = false;
                     drag = true;
                 }
                 break;
-            case "text":        // Textbox
-
-                break;
-            case "rect":        // Rectangle
-                unselect();
+            case "rect":
+                select(); // Rectangle
                 if (!newPath) {
                     newPath = true;
                     cursorPosition = { x: current_position.x, y: current_position.y };
                 }
                 break;
-            case "circle":      // Circle
-                unselect();
+            case "circle":
+                select(); // Circle
                 if (!newPath) {
                     newPath = true;
                     cursorPosition = { x: current_position.x, y: current_position.y };
                 }
                 break;
-            case "line":        // Line
-                unselect();
-                break;
+            case "line":
+                select();
+                break; // Line
         }
     }
 };
 
 svgDraw.onpointermove = e => {
+
     if (e.buttons == 1 && e.isPrimary) {
         e.preventDefault();
         let current_position = cursorPoint(e);
 
-        switch (app.type) {
-            case "pen":         // Draw
-                if (!id) {
-                    coordinates.push({ x: current_position.x - e.movementX, y: current_position.y - e.movementY });
-                    coordinates.push({ x: current_position.x, y: current_position.y });
-
-                    id = uuidv4();
-                    startDraw(id, coordinates[0], app.color, app.size);
-                    con.invoke("StartDraw", id, coordinates[0], app.color, app.size);
-
-                } else if (current_position.x != coordinates[1].x || current_position.y != coordinates[1].y) {
-                    coordinates.push({ x: current_position.x, y: current_position.y });
-                    coordinates = coordinates.slice(-3);
-                    let midPoint = mid(coordinates[1], coordinates[2]);
-                    draw(id, coordinates[1], midPoint);
-                    con.invoke("Draw", id, coordinates[1], midPoint);
-                }
-                break;
-            case "cursor":      // Move
-                if (!choosen_id) break;
-
-                if (drag) {
-                    $query(`[id='${choosen_id}']`).style.transform = `translate(${current_position.x - cursorPosition.x}px,${current_position.y - cursorPosition.y}px)`;
-                    $query('#resize_wrap').style.transform = `translate(${current_position.x - cursorPosition.x}px,${current_position.y - cursorPosition.y}px)`;
-                    $query('#line_edit').style.transform = `translate(${current_position.x - cursorPosition.x}px,${current_position.y - cursorPosition.y}px)`;
-                }
-                else if (resize && resize_angle) {
-                    let selected_info = $query(`[id='${choosen_id}']`).getBBox();
-
-                    if (resize_angle == "resize_e") {
-                        differentPosition.x = current_position.x - (selected_info.x + selected_info.width);
-                        current_scale.x = (differentPosition.x + selected_info.width) / selected_info.width;
-
-                        $query(`[id='${choosen_id}']`).style.transform = `translate(${selected_info.x}px,0) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x}px,0)`
-                        $query('#resize_wrap').style.transform = `translate(${selected_info.x}px,0) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x}px,0)`
+        if (grab && space) {
+            differentPosition.x = current_position.x - cursorPosition.x;
+            differentPosition.y = current_position.y - cursorPosition.y;
+            svgDraw.setAttribute("x", Number(svgDraw.getAttribute("x")) + differentPosition.x);
+            svgDraw.setAttribute("y", Number(svgDraw.getAttribute("y")) + differentPosition.y);
+            $query('#grid_wrap').setAttribute("x", Number(svgDraw.getAttribute("x")) + differentPosition.x);
+            $query('#grid_wrap').setAttribute("y", Number(svgDraw.getAttribute("y")) + differentPosition.y);
+        } else {
+            redoList = [];
+            switch (app.type) {
+                case "pen": // Draw
+                    if (!id) {
+                        coordinates.push({ x: current_position.x - e.movementX, y: current_position.y - e.movementY });
+                        coordinates.push({ x: current_position.x, y: current_position.y });
+                        id = uuidv4();
+                        startDraw(id, coordinates[0], app.color, app.size, app.fill);
+                        con.invoke("StartDraw", id, coordinates[0], app.color, app.size, app.fill);
+                    } else if (current_position.x != coordinates[1].x || current_position.y != coordinates[1].y) {
+                        coordinates.push({ x: current_position.x, y: current_position.y });
+                        coordinates = coordinates.slice(-3);
+                        let midPoint = mid(coordinates[1], coordinates[2]);
+                        draw(id, coordinates[1], midPoint);
+                        con.invoke("Draw", id, coordinates[1], midPoint);
                     }
-                    else if (resize_angle == "resize_w") {
-                        differentPosition.x = selected_info.x - current_position.x;
-                        current_scale.x = (differentPosition.x + selected_info.width) / selected_info.width;
+                    break;
+                case "cursor": // Move
+                    if (!choosen_id) break;
+                    if (drag) {
+                        $query(`[id='${choosen_id}']`).style.transform = `translate(${current_position.x - cursorPosition.x}px,${current_position.y - cursorPosition.y}px)`;
+                        if ($query('#resize_wrap')) $query('#resize_wrap').style.transform = `translate(${current_position.x - cursorPosition.x}px,${current_position.y - cursorPosition.y}px)`;
+                        if ($query('#line_edit')) $query('#line_edit').style.transform = `translate(${current_position.x - cursorPosition.x}px,${current_position.y - cursorPosition.y}px)`;
+                    } else if (resize && resize_angle) {
+                        let selected_info = $query(`[id='${choosen_id}']`).getBBox();
 
-                        $query(`[id='${choosen_id}']`).style.transform = `translate(${selected_info.x + selected_info.width}px,0) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x + selected_info.width}px,0)`;
-                        $query(`#resize_wrap`).style.transform = `translate(${selected_info.x + selected_info.width}px,0) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x + selected_info.width}px,0)`;
+                        if (resize_angle == "resize_e") {
+                            differentPosition.x = current_position.x - (selected_info.x + selected_info.width);
+                            current_scale.x = Math.max((differentPosition.x + selected_info.width) / selected_info.width, 0.1);
+
+                            $query(`[id='${choosen_id}']`).style.transform = `translate(${selected_info.x}px,0) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x}px,0)`
+                            $query('#resize_wrap').style.transform = `translate(${selected_info.x}px,0) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x}px,0)`
+                        } else if (resize_angle == "resize_w") {
+                            differentPosition.x = selected_info.x - current_position.x;
+                            current_scale.x = Math.max((differentPosition.x + selected_info.width) / selected_info.width, 0.1);
+
+                            $query(`[id='${choosen_id}']`).style.transform = `translate(${selected_info.x + selected_info.width}px,0) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x + selected_info.width}px,0)`;
+                            $query(`#resize_wrap`).style.transform = `translate(${selected_info.x + selected_info.width}px,0) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x + selected_info.width}px,0)`;
+                        } else if (resize_angle == "resize_s") {
+                            differentPosition.y = current_position.y - (selected_info.y + selected_info.height);
+                            current_scale.y = Math.max((differentPosition.y + selected_info.height) / selected_info.height, 0.1);
+
+                            $query(`[id='${choosen_id}']`).style.transform = `translate(0,${selected_info.y}px) scale(${current_scale.x},${current_scale.y}) translate(0,-${selected_info.y}px)`;
+                            $query(`#resize_wrap`).style.transform = `translate(0,${selected_info.y}px) scale(${current_scale.x},${current_scale.y}) translate(0,-${selected_info.y}px)`;
+                        } else if (resize_angle == "resize_n") {
+                            differentPosition.y = selected_info.y - current_position.y;
+                            current_scale.y = Math.max((differentPosition.y + selected_info.height) / selected_info.height, 0.1);
+
+                            $query(`[id='${choosen_id}']`).style.transform = `translate(0,${selected_info.y + selected_info.height}px) scale(${current_scale.x},${current_scale.y}) translate(0,-${selected_info.y + selected_info.height}px)`;
+                            $query(`#resize_wrap`).style.transform = `translate(0,${selected_info.y + selected_info.height}px) scale(${current_scale.x},${current_scale.y}) translate(0,-${selected_info.y + selected_info.height}px)`;
+                        } else if (resize_angle == "resize_se") {
+                            differentPosition.y = current_position.y - (selected_info.y + selected_info.height);
+                            differentPosition.x = current_position.x - (selected_info.x + selected_info.width);
+                            current_scale.y = Math.max((differentPosition.y + selected_info.height) / selected_info.height, 0.1);
+                            current_scale.x = Math.max((differentPosition.x + selected_info.width) / selected_info.width, 0.1);
+
+                            if (e.shiftKey) current_scale.x > current_scale.y ? current_scale.y = current_scale.x : current_scale.x = current_scale.y;
+
+                            $query(`[id='${choosen_id}']`).style.transform = `translate(${selected_info.x}px,${selected_info.y}px) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x}px,-${selected_info.y}px)`;
+                            $query(`#resize_wrap`).style.transform = `translate(${selected_info.x}px,${selected_info.y}px) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x}px,-${selected_info.y}px)`;
+                        } else if (resize_angle == "resize_nw") {
+                            differentPosition.x = selected_info.x - current_position.x;
+                            differentPosition.y = selected_info.y - current_position.y;
+                            current_scale.x = Math.max((differentPosition.x + selected_info.width) / selected_info.width, 0.1);
+                            current_scale.y = Math.max((differentPosition.y + selected_info.height) / selected_info.height, 0.1);
+
+                            if (e.shiftKey) current_scale.x > current_scale.y ? current_scale.y = current_scale.x : current_scale.x = current_scale.y;
+
+                            $query(`[id='${choosen_id}']`).style.transform = `translate(${selected_info.x + selected_info.width}px,${selected_info.y + selected_info.height}px) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x + selected_info.width}px,-${selected_info.y + selected_info.height}px)`;
+                            $query(`#resize_wrap`).style.transform = `translate(${selected_info.x + selected_info.width}px,${selected_info.y + selected_info.height}px) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x + selected_info.width}px,-${selected_info.y + selected_info.height}px)`;
+                        } else if (resize_angle == "resize_ne") {
+                            differentPosition.y = selected_info.y - current_position.y;
+                            differentPosition.x = current_position.x - (selected_info.x + selected_info.width);
+                            current_scale.x = Math.max((differentPosition.x + selected_info.width) / selected_info.width, 0.1);
+                            current_scale.y = Math.max((differentPosition.y + selected_info.height) / selected_info.height, 0.1);
+
+                            if (e.shiftKey) current_scale.x > current_scale.y ? current_scale.y = current_scale.x : current_scale.x = current_scale.y;
+
+                            $query(`[id='${choosen_id}']`).style.transform = `translate(${selected_info.x}px,${selected_info.y + selected_info.height}px) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x}px,-${selected_info.y + selected_info.height}px)`;
+                            $query(`#resize_wrap`).style.transform = `translate(${selected_info.x}px,${selected_info.y + selected_info.height}px) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x}px,-${selected_info.y + selected_info.height}px)`;
+                        } else if (resize_angle == "resize_sw") {
+                            differentPosition.y = current_position.y - (selected_info.y + selected_info.height);
+                            differentPosition.x = selected_info.x - current_position.x;
+                            current_scale.x = Math.max((differentPosition.x + selected_info.width) / selected_info.width, 0.1);
+                            current_scale.y = Math.max((differentPosition.y + selected_info.height) / selected_info.height, 0.1);
+
+                            if (e.shiftKey) current_scale.x > current_scale.y ? current_scale.y = current_scale.x : current_scale.x = current_scale.y;
+
+                            $query(`[id='${choosen_id}']`).style.transform = `translate(${selected_info.x + selected_info.width}px,${selected_info.y}px) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x + selected_info.width}px,-${selected_info.y}px)`;
+                            $query(`#resize_wrap`).style.transform = `translate(${selected_info.x + selected_info.width}px,${selected_info.y}px) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x + selected_info.width}px,-${selected_info.y}px)`;
+                        } else if (resize_angle == "line_x1") {
+                            let newPoint = comparePoint(current_position);
+
+                            cursorPosition = { x: current_position.x.toFixed(2), y: current_position.y.toFixed(2) };
+                            cursorPosition = newPoint ? { x: newPoint.x, y: newPoint.y } : { x: current_position.x.toFixed(2), y: current_position.y.toFixed(2) };
+                            $query(`[id='${choosen_id}']`).setAttribute("x1", cursorPosition.x)
+                            $query(`[id='${choosen_id}']`).setAttribute("y1", cursorPosition.y);
+                            con.invoke('MoveObject', 'line', {
+                                id: choosen_id,
+                                x1: $query(`[id='${choosen_id}']`).getAttribute('x1'),
+                                y1: $query(`[id='${choosen_id}']`).getAttribute('y1')
+                            });
+                            selectLine(choosen_id, { x: $query(`[id='${choosen_id}']`).getAttribute('x1'), y: $query(`[id='${choosen_id}']`).getAttribute('y1') }, true);
+                        } else if (resize_angle == "line_x2") {
+                            let newPoint = comparePoint(current_position);
+                            cursorPosition = newPoint ? { x: newPoint.x, y: newPoint.y } : { x: current_position.x.toFixed(2), y: current_position.y.toFixed(2) };
+                            $query(`[id='${choosen_id}']`).setAttribute("x2", cursorPosition.x)
+                            $query(`[id='${choosen_id}']`).setAttribute("y2", cursorPosition.y);
+                            con.invoke('MoveObject', 'line', {
+                                id: choosen_id,
+                                x2: $query(`[id='${choosen_id}']`).getAttribute('x2'),
+                                y2: $query(`[id='${choosen_id}']`).getAttribute('y2')
+                            });
+                            selectLine(choosen_id, { x: $query(`[id='${choosen_id}']`).getAttribute('x2'), y: $query(`[id='${choosen_id}']`).getAttribute('y2') });
+                        }
                     }
-                    else if (resize_angle == "resize_s") {
-                        differentPosition.y = current_position.y - (selected_info.y + selected_info.height);
-                        current_scale.y = (differentPosition.y + selected_info.height) / selected_info.height;
-
-                        $query(`[id='${choosen_id}']`).style.transform = `translate(0,${selected_info.y}px) scale(${current_scale.x},${current_scale.y}) translate(0,-${selected_info.y}px)`;
-                        $query(`#resize_wrap`).style.transform = `translate(0,${selected_info.y}px) scale(${current_scale.x},${current_scale.y}) translate(0,-${selected_info.y}px)`;
+                    break;
+                case "rect": // Rectangle
+                    if (!id) {
+                        id = uuidv4();
+                        let point = { x: current_position.x, y: current_position.y };
+                        startRect(id, point, app.color, app.size, app.fill);
+                        con.invoke("StartRect", id, point, app.color, app.size, app.fill);
                     }
-                    else if (resize_angle == "resize_n") {
-                        differentPosition.y = selected_info.y - current_position.y;
-                        current_scale.y = (differentPosition.y + selected_info.height) / selected_info.height;
+                    let pointR = null;
+                    differentPosition = { x: Math.abs(current_position.x - cursorPosition.x), y: Math.abs(current_position.y - cursorPosition.y) };
 
-                        $query(`[id='${choosen_id}']`).style.transform = `translate(0,${selected_info.y + selected_info.height}px) scale(${current_scale.x},${current_scale.y}) translate(0,-${selected_info.y + selected_info.height}px)`;
-                        $query(`#resize_wrap`).style.transform = `translate(0,${selected_info.y + selected_info.height}px) scale(${current_scale.x},${current_scale.y}) translate(0,-${selected_info.y + selected_info.height}px)`;
+                    // Square ===================================================
+                    if (e.shiftKey) differentPosition.x > differentPosition.y ? differentPosition.y = differentPosition.x : differentPosition.x = differentPosition.y
+
+                    let boxR = { x: differentPosition.x, y: differentPosition.y }; // Set rect size
+
+                    // Fix position =====================================================
+                    if (current_position.x < cursorPosition.x && current_position.y < cursorPosition.y) //Left top
+                        pointR = { x: cursorPosition.x - differentPosition.x, y: cursorPosition.y - differentPosition.y };
+                    else if (current_position.x < cursorPosition.x) //Left
+                        pointR = { x: cursorPosition.x - differentPosition.x, y: cursorPosition.y };
+                    else if (current_position.y < cursorPosition.y) //Top
+                        pointR = { x: cursorPosition.x, y: cursorPosition.y - differentPosition.y };
+                    else //Bottom Right
+                        pointR = { x: cursorPosition.x, y: cursorPosition.y };
+
+                    drawRect(id, pointR, boxR);
+                    con.invoke("DrawRect", id, pointR, boxR);
+                    break;
+                case "circle": // Circle
+                    if (!id) { // check new element
+                        id = uuidv4();
+                        let point = { x: current_position.x, y: current_position.y };
+                        startCircle(id, point, app.color, app.size, app.fill);
+                        con.invoke("StartCircle", id, point, app.color, app.size, app.fill);
                     }
-                    else if (resize_angle == "resize_se") {
-                        differentPosition.y = current_position.y - (selected_info.y + selected_info.height);
-                        differentPosition.x = current_position.x - (selected_info.x + selected_info.width);
-                        current_scale.y = (differentPosition.y + selected_info.height) / selected_info.height;
-                        current_scale.x = (differentPosition.x + selected_info.width) / selected_info.width;
+                    let pointC = null;
+                    differentPosition = { x: Math.abs(current_position.x - cursorPosition.x), y: Math.abs(current_position.y - cursorPosition.y) };
 
-                        if (e.shiftKey) current_scale.x > current_scale.y ? current_scale.y = current_scale.x : current_scale.x = current_scale.y;
+                    // Prefect circle ===================================================
+                    if (e.shiftKey) differentPosition.x > differentPosition.y ? differentPosition.y = differentPosition.x : differentPosition.x = differentPosition.y
 
-                        $query(`[id='${choosen_id}']`).style.transform = `translate(${selected_info.x}px,${selected_info.y}px) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x}px,-${selected_info.y}px)`;
-                        $query(`#resize_wrap`).style.transform = `translate(${selected_info.x}px,${selected_info.y}px) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x}px,-${selected_info.y}px)`;
+                    let boxC = { x: differentPosition.x / 2, y: differentPosition.y / 2 }; // Set circle size
+
+                    // Fix position =====================================================
+                    if (current_position.x - cursorPosition.x < 0 && current_position.y - cursorPosition.y < 0) // left top
+                        pointC = { x: cursorPosition.x - differentPosition.x / 2, y: cursorPosition.y - differentPosition.y / 2 };
+                    else if (current_position.x - cursorPosition.x < 0) // left
+                        pointC = { x: cursorPosition.x - differentPosition.x / 2, y: cursorPosition.y + differentPosition.y / 2 };
+                    else if (current_position.y - cursorPosition.y < 0) /// top
+                        pointC = { x: cursorPosition.x + differentPosition.x / 2, y: cursorPosition.y - differentPosition.y / 2 };
+                    else // bottom right
+                        pointC = { x: cursorPosition.x + differentPosition.x / 2, y: cursorPosition.y + differentPosition.y / 2 };
+
+                    drawCircle(id, pointC, boxC);
+                    con.invoke("DrawCircle", id, pointC, boxC);
+                    break;
+                case "line": // Line
+                    let newPoint = comparePoint(current_position);
+
+                    if (!id) {
+                        cursorPosition = newPoint ? { x: newPoint.x, y: newPoint.y } : { x: current_position.x, y: current_position.y };
+                        id = uuidv4();
                     }
-                    else if (resize_angle == "resize_nw") {
-                        differentPosition.x = selected_info.x - current_position.x;
-                        differentPosition.y = selected_info.y - current_position.y;
-                        current_scale.x = (differentPosition.x + selected_info.width) / selected_info.width;
-                        current_scale.y = (differentPosition.y + selected_info.height) / selected_info.height;
 
-                        if (e.shiftKey) current_scale.x > current_scale.y ? current_scale.y = current_scale.x : current_scale.x = current_scale.y;
-
-                        $query(`[id='${choosen_id}']`).style.transform = `translate(${selected_info.x + selected_info.width}px,${selected_info.y + selected_info.height}px) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x + selected_info.width}px,-${selected_info.y + selected_info.height}px)`;
-                        $query(`#resize_wrap`).style.transform = `translate(${selected_info.x + selected_info.width}px,${selected_info.y + selected_info.height}px) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x + selected_info.width}px,-${selected_info.y + selected_info.height}px)`;
-                    }
-                    else if (resize_angle == "resize_ne") {
-                        differentPosition.y = selected_info.y - current_position.y;
-                        differentPosition.x = current_position.x - (selected_info.x + selected_info.width);
-                        current_scale.x = (differentPosition.x + selected_info.width) / selected_info.width;
-                        current_scale.y = (differentPosition.y + selected_info.height) / selected_info.height;
-
-                        if (e.shiftKey) current_scale.x > current_scale.y ? current_scale.y = current_scale.x : current_scale.x = current_scale.y;
-
-                        $query(`[id='${choosen_id}']`).style.transform = `translate(${selected_info.x}px,${selected_info.y + selected_info.height}px) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x}px,-${selected_info.y + selected_info.height}px)`;
-                        $query(`#resize_wrap`).style.transform = `translate(${selected_info.x}px,${selected_info.y + selected_info.height}px) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x}px,-${selected_info.y + selected_info.height}px)`;
-                    }
-                    else if (resize_angle == "resize_sw") {
-                        differentPosition.y = current_position.y - (selected_info.y + selected_info.height);
-                        differentPosition.x = selected_info.x - current_position.x;
-                        current_scale.x = (differentPosition.x + selected_info.width) / selected_info.width;
-                        current_scale.y = (differentPosition.y + selected_info.height) / selected_info.height;
-
-                        if (e.shiftKey) current_scale.x > current_scale.y ? current_scale.y = current_scale.x : current_scale.x = current_scale.y;
-
-                        $query(`[id='${choosen_id}']`).style.transform = `translate(${selected_info.x + selected_info.width}px,${selected_info.y}px) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x + selected_info.width}px,-${selected_info.y}px)`;
-                        $query(`#resize_wrap`).style.transform = `translate(${selected_info.x + selected_info.width}px,${selected_info.y}px) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x + selected_info.width}px,-${selected_info.y}px)`;
-                    }
-                    else if (resize_angle == "line_x1") {
-                        let newPoint = comparePoint(current_position);
-                        cursorPosition = newPoint ? { x: newPoint.x, y: newPoint.y } : { x: current_position.x.toFixed(2), y: current_position.y.toFixed(2) };
-
-                        $query(`[id='${choosen_id}']`).setAttribute("x1", cursorPosition.x)
-                        $query(`[id='${choosen_id}']`).setAttribute("y1", cursorPosition.y);
-                        con.invoke('MoveObject', 'line', {
-                            id: choosen_id,
-                            x1: $query(`[id='${choosen_id}']`).getAttribute('x1'), y1: $query(`[id='${choosen_id}']`).getAttribute('y1')
-                        });
-                        selected_border({ x1: $(`#${choosen_id}`).attr('x1'), x2: $(`#${choosen_id}`).attr('x2'), y1: $(`#${choosen_id}`).attr('y1'), y2: $(`#${choosen_id}`).attr('y2') }, true);
-                    }
-                    else if (resize_angle == "line_x2") {
-                        let newPoint = comparePoint(current_position);
-                        cursorPosition = newPoint ? { x: newPoint.x, y: newPoint.y } : { x: current_position.x.toFixed(2), y: current_position.y.toFixed(2) };
-                        $query(`[id='${choosen_id}']`).setAttribute("x2", cursorPosition.x)
-                        $query(`[id='${choosen_id}']`).setAttribute("y2", cursorPosition.y);
-                        con.invoke('MoveObject', 'line', {
-                            id: choosen_id,
-                            x2: $query(`[id='${choosen_id}']`).getAttribute('x2'), y2: $query(`[id='${choosen_id}']`).getAttribute('y2')
-                        });
-                        selected_border({ x1: $(`#${choosen_id}`).attr('x1'), x2: $(`#${choosen_id}`).attr('x2'), y1: $(`#${choosen_id}`).attr('y1'), y2: $(`#${choosen_id}`).attr('y2') }, true);
-                    }
-                }
-                break;
-            case "text":        // Textbox
-
-                break;
-            case "rect":        // Rectangle
-                if (!id) {
-                    id = uuidv4();
-                    let point = { x: current_position.x, y: current_position.y };
-                    startRect(id, point, app.color, app.size);
-                    con.invoke("StartRect", id, point, app.color, app.size);
-                }
-                differentPosition = { x: Math.abs(current_position.x - cursorPosition.x), y: Math.abs(current_position.y - cursorPosition.y) };
-
-                // Square ===================================================
-                if (e.shiftKey) differentPosition.x > differentPosition.y ? differentPosition.y = differentPosition.x : differentPosition.x = differentPosition.y
-
-                let pointR = null;
-
-                // Set rect size ==================================================
-                let boxR = { x: differentPosition.x, y: differentPosition.y };
-
-                // Fix position =====================================================
-                if (current_position.x < cursorPosition.x && current_position.y < cursorPosition.y) //Left top
-                    pointR = { x: cursorPosition.x - differentPosition.x, y: cursorPosition.y - differentPosition.y };
-                else if (current_position.x < cursorPosition.x) //Left
-                    pointR = { x: cursorPosition.x - differentPosition.x, y: cursorPosition.y };
-                else if (current_position.y < cursorPosition.y)  //Top
-                    pointR = { x: cursorPosition.x, y: cursorPosition.y - differentPosition.y };
-                else //Bottom Right
-                    pointR = { x: cursorPosition.x, y: cursorPosition.y };
-
-                drawRect(id, pointR, boxR);
-                con.invoke("DrawRect", id, pointR, boxR);
-                break;
-            case "circle":      // Circle
-                if (!id) { // check new element
-                    id = uuidv4();
-                    let point = { x: current_position.x, y: current_position.y };
-                    startCircle(id, point, app.color, app.size);
-                    con.invoke("StartCircle", id, point, app.color, app.size);
-                }
-
-                differentPosition = { x: Math.abs(current_position.x - cursorPosition.x), y: Math.abs(current_position.y - cursorPosition.y) };
-
-                // Prefect circle ===================================================
-                if (e.shiftKey) differentPosition.x > differentPosition.y ? differentPosition.y = differentPosition.x : differentPosition.x = differentPosition.y
-
-                let pointC = null;
-                // Set circle size ==================================================
-                let boxC = { x: differentPosition.x / 2, y: differentPosition.y / 2 };
-
-                // Fix position =====================================================
-                if (current_position.x - cursorPosition.x < 0 && current_position.y - cursorPosition.y < 0)   // left top
-                    pointC = { x: cursorPosition.x - differentPosition.x / 2, y: cursorPosition.y - differentPosition.y / 2 };
-                else if (current_position.x - cursorPosition.x < 0)   // left
-                    pointC = { x: cursorPosition.x - differentPosition.x / 2, y: cursorPosition.y + differentPosition.y / 2 };
-                else if (current_position.y - cursorPosition.y < 0)   /// top
-                    pointC = { x: cursorPosition.x + differentPosition.x / 2, y: cursorPosition.y - differentPosition.y / 2 };
-                else   // bottom right
-                    pointC = { x: cursorPosition.x + differentPosition.x / 2, y: cursorPosition.y + differentPosition.y / 2 };
-
-                drawCircle(id, pointC, boxC);
-                con.invoke("DrawCircle", id, pointC, boxC);
-
-                break;
-            case "line":        // Line
-                let newPoint = comparePoint(current_position);
-
-                if (!id) {
-                    cursorPosition = newPoint ? { x: newPoint.x, y: newPoint.y } : { x: current_position.x, y: current_position.y };
-                    id = uuidv4();
-                }
-                let tempCurrent = { x: Number(current_position.x), y: Number(current_position.y) };
-                let pointLA = null;
-                newPoint ? pointLA = newPoint : pointLA = tempCurrent;
-                drawLine(id, tempCurrent, pointLA, app.color, app.size);
-                con.invoke('DrawLine', id, tempCurrent, pointLA, app.color, app.size);
-                break;
-            default:
-                break;
+                    let tempCurrent = { x: Number(current_position.x), y: Number(current_position.y) };
+                    let pointLA = null;
+                    newPoint ? pointLA = newPoint : pointLA = tempCurrent;
+                    drawLine(id, tempCurrent, pointLA, app.color, app.size);
+                    con.invoke('DrawLine', id, tempCurrent, pointLA, app.color, app.size);
+                    break;
+            }
         }
     }
 };
@@ -361,7 +320,7 @@ svgDraw.onpointerup = svgDraw.onpointerleave = e => {
     let current_position = cursorPoint(e);
 
     switch (app.type) {
-        case "pen":         // Draw
+        case "pen": // Draw
             if (id) {
                 coordinates.push({ x: current_position.x, y: current_position.y });
                 coordinates = coordinates.slice(-3);
@@ -370,40 +329,27 @@ svgDraw.onpointerup = svgDraw.onpointerleave = e => {
                 draw(id, midPoint, coordinates[2]);
                 con.invoke("Draw", id, midPoint, coordinates[2]);
             }
-            if (id != null)
-                undoList.push({ mode: 'new', object: $query(`[id='${id}']`).cloneNode(true) });
+            if (id != null) undoList.push({ mode: 'new', object: $query(`[id='${id}']`).cloneNode(true) });
             id = null;
             coordinates = [];
             break;
-        case "cursor":      // Move
-            let object1 = null;
-            let object2 = null;
+        case "cursor": // Move
+            let object1 = null,
+                object2 = null;
             if (choosen_id) {
                 const change = window.getComputedStyle($query(`[id='${choosen_id}']`), null)?.transform;
                 const selected_css_value = change != 'none' ? change.match(/matrix.*\((.+)\)/)[1].split(', ').map(parseFloat) : null;
                 let $choosen_id = $query(`[id='${choosen_id}']`);
-
-                // $(`#${choosen_id},#resize_wrap,#line_edit`).removeAttr('style');
                 $choosen_id.removeAttribute('style');
-                $query("#resize_wrap").removeAttribute('style');
-                $query("#line_edit").removeAttribute('style');
-
-                if ($choosen_id.tagName == 'line') {
-                    $('#resize_wrap').hide();
-                } else {
-                    $('#line_edit').hide();
-                }
-
                 object1 = $choosen_id.cloneNode(true);
-                if (drag && selected_css_value) {       // drag
+                if (drag && selected_css_value) { // drag
                     position = { x: selected_css_value[4], y: selected_css_value[5] };
 
                     switch ($choosen_id.tagName) {
                         case 'path':
                             let new_coord;
                             const coord = $choosen_id.getAttribute('d').substring(1).split("Q");
-                            let i
-                            for (i of coord) {
+                            for (let i of coord) {
                                 let coord_xy = i.split(",").map(parseFloat);
                                 !new_coord ?
                                     new_coord = `M${simplifyNumber(coord_xy[0] + position.x)},${simplifyNumber(coord_xy[1] + position.y)}` :
@@ -423,25 +369,36 @@ svgDraw.onpointerup = svgDraw.onpointerleave = e => {
                             con.invoke('MoveObject', 'ellipse', { id: choosen_id, cx: $choosen_id.getAttribute('cx'), cy: $choosen_id.getAttribute('cy') });
                             break;
                         case 'image':
+                            $choosen_id.setAttribute('x', Number($choosen_id.getAttribute('x')) + position.x);
+                            $choosen_id.setAttribute('y', Number($choosen_id.getAttribute('y')) + position.y);
+                            con.invoke('MoveObject', 'image', { id: choosen_id, x: $choosen_id.getAttribute('x'), y: $choosen_id.getAttribute('y') });
                             break;
                         case 'line':
                             $choosen_id.setAttribute('x1', Number($choosen_id.getAttribute('x1')) + position.x);
                             $choosen_id.setAttribute('x2', Number($choosen_id.getAttribute('x2')) + position.x);
                             $choosen_id.setAttribute('y1', Number($choosen_id.getAttribute('y1')) + position.y);
                             $choosen_id.setAttribute('y2', Number($choosen_id.getAttribute('y2')) + position.y);
-                            selected_border({ x1: $choosen_id.getAttribute('x1'), x2: $choosen_id.getAttribute('x2'), y1: $choosen_id.getAttribute('y1'), y2: $choosen_id.getAttribute('y2') }, true);
-                            popPoint(tempPoint1); popPoint(tempPoint2);
+                            select({ x1: $query(`[id='${choosen_id}']`).getAttribute('x1'), x2: $query(`[id='${choosen_id}']`).getAttribute('x2'), y1: $query(`[id='${choosen_id}']`).getAttribute('y1'), y2: $query(`[id='${choosen_id}']`).getAttribute('y2') }, true);
+                            popPoint(tempPoint1);
+                            popPoint(tempPoint2);
+                            con.invoke('PopPoint', tempPoint1);
+                            con.invoke('PopPoint', tempPoint2);
                             pushPoint({ x: Number($choosen_id.getAttribute("x1")), y: Number($choosen_id.getAttribute("y1")) });
                             pushPoint({ x: Number($choosen_id.getAttribute("x2")), y: Number($choosen_id.getAttribute("y2")) });
+                            con.invoke('PushPoint', { x: Number($choosen_id.getAttribute("x1")), y: Number($choosen_id.getAttribute("y1")) });
+                            con.invoke('PushPoint', { x: Number($choosen_id.getAttribute("x2")), y: Number($choosen_id.getAttribute("y2")) });
                             $query("#line_edit").removeAttribute('style');
                             con.invoke('MoveObject', 'line', {
-                                id: choosen_id, x1: $choosen_id.getAttribute('x1'), y1: $choosen_id.getAttribute('y1'),
-                                x2: $choosen_id.getAttribute('x2'), y2: $choosen_id.getAttribute('y2')
+                                id: choosen_id,
+                                x1: $choosen_id.getAttribute('x1'),
+                                y1: $choosen_id.getAttribute('y1'),
+                                x2: $choosen_id.getAttribute('x2'),
+                                y2: $choosen_id.getAttribute('y2')
                             });
                             break;
+
                     }
-                }
-                else if (resize && selected_css_value) {        // resize
+                } else if (resize && selected_css_value) { // resize
                     let scale = { x: selected_css_value[0], y: selected_css_value[3] };
 
                     switch ($choosen_id.tagName) {
@@ -453,10 +410,14 @@ svgDraw.onpointerup = svgDraw.onpointerleave = e => {
                                 let coord_xy = i.split(",").map(parseFloat);
                                 if (!initial_position) initial_position = { x: coord_xy[0], y: coord_xy[1] };
                                 else switch (resize_angle) {
-                                    case "resize_e": case "resize_s": case "resize_se":
+                                    case "resize_e":
+                                    case "resize_s":
+                                    case "resize_se":
                                         initial_position = { x: Math.min(initial_position.x, coord_xy[0], coord_xy[2]), y: Math.min(initial_position.y, coord_xy[1], coord_xy[3]) };
                                         break;
-                                    case "resize_w": case "resize_n": case "resize_nw":
+                                    case "resize_w":
+                                    case "resize_n":
+                                    case "resize_nw":
                                         initial_position = { x: Math.max(initial_position.x, coord_xy[0], coord_xy[2]), y: Math.max(initial_position.y, coord_xy[1], coord_xy[3]) };
                                         break;
                                     case "resize_ne":
@@ -467,9 +428,7 @@ svgDraw.onpointerup = svgDraw.onpointerleave = e => {
                                         break;
                                 }
                             }
-
                             initial_position = { x: initial_position.x * scale.x - initial_position.x, y: initial_position.y * scale.y - initial_position.y };
-
                             for (let i of coord) {
                                 let coord_xy = i.split(",").map(parseFloat);
                                 !new_coord ?
@@ -480,7 +439,7 @@ svgDraw.onpointerup = svgDraw.onpointerleave = e => {
                             con.invoke('MoveObject', 'path', { id: choosen_id, d: new_coord });
                             break;
                         case 'rect':
-                            const rect_info = $(`#${choosen_id}`)[0].getBBox();
+                            const rect_info = $choosen_id.getBBox();
 
                             if (resize_angle == "resize_w" || resize_angle == "resize_sw")
                                 rect_info.x = rect_info.x - (rect_info.width * scale.x - rect_info.width);
@@ -497,8 +456,34 @@ svgDraw.onpointerup = svgDraw.onpointerleave = e => {
                             $choosen_id.setAttribute('height', rect_info.height * scale.y);
                             con.invoke('MoveObject', 'rect', {
                                 id: choosen_id,
-                                x: $choosen_id.getAttribute('x'), y: $choosen_id.getAttribute('y'),
-                                width: $choosen_id.getAttribute('width'), height: $choosen_id.getAttribute('height')
+                                x: $choosen_id.getAttribute('x'),
+                                y: $choosen_id.getAttribute('y'),
+                                width: $choosen_id.getAttribute('width'),
+                                height: $choosen_id.getAttribute('height')
+                            });
+                            break;
+                        case 'image':
+                            const image_info = $choosen_id.getBBox();
+
+                            if (resize_angle == "resize_w" || resize_angle == "resize_sw")
+                            image_info.x = image_info.x - (image_info.width * scale.x - image_info.width);
+                            else if (resize_angle == "resize_n" || resize_angle == "resize_ne")
+                            image_info.y = image_info.y - (image_info.height * scale.y - image_info.height);
+                            else if (resize_angle == "resize_nw") {
+                                image_info.x = image_info.x - (image_info.width * scale.x - image_info.width);
+                                image_info.y = image_info.y - (image_info.height * scale.y - image_info.height);
+                            }
+
+                            $choosen_id.setAttribute('x', image_info.x + position.x);
+                            $choosen_id.setAttribute('y', image_info.y + position.y);
+                            $choosen_id.setAttribute('width', image_info.width * scale.x);
+                            $choosen_id.setAttribute('height', image_info.height * scale.y);
+                            con.invoke('MoveObject', 'rect', {
+                                id: choosen_id,
+                                x: $choosen_id.getAttribute('x'),
+                                y: $choosen_id.getAttribute('y'),
+                                width: $choosen_id.getAttribute('width'),
+                                height: $choosen_id.getAttribute('height')
                             });
                             break;
                         case 'ellipse':
@@ -547,71 +532,116 @@ svgDraw.onpointerup = svgDraw.onpointerleave = e => {
                                     circle.cy = ellipse_info.y + circle.ry;
                                     break;
                             }
-
                             $choosen_id.setAttribute('cx', circle.cx);
                             $choosen_id.setAttribute('cy', circle.cy);
                             $choosen_id.setAttribute('rx', circle.rx);
                             $choosen_id.setAttribute('ry', circle.ry);
-
                             con.invoke('MoveObject', 'ellipse', {
                                 id: choosen_id,
-                                cx: $choosen_id.getAttribute('cx'), cy: $choosen_id.getAttribute('cy'),
-                                rx: $choosen_id.getAttribute('rx'), ry: $choosen_id.getAttribute('ry')
+                                cx: $choosen_id.getAttribute('cx'),
+                                cy: $choosen_id.getAttribute('cy'),
+                                rx: $choosen_id.getAttribute('rx'),
+                                ry: $choosen_id.getAttribute('ry')
                             });
                             break;
                     }
-                }
-                else if (resize && $(`#${choosen_id}`)[0].tagName == "line") {
-                    popPoint({ x: tempPoint1.x, y: tempPoint1.y });
-                    popPoint({ x: tempPoint2.x, y: tempPoint2.y });
+                } else if (resize && $query(`[id='${choosen_id}']`).tagName == "line") {
+                    popPoint({ x: tempPoint1.x * 1, y: tempPoint1.y * 1 });
+                    popPoint({ x: tempPoint2.x * 1, y: tempPoint2.y * 1 });
+                    con.invoke('PopPoint', { x: tempPoint1.x * 1, y: tempPoint1.y * 1 });
+                    con.invoke('PopPoint', { x: tempPoint2.x * 1, y: tempPoint2.y * 1 });
                     pushPoint({ x: $choosen_id.getAttribute('x1') * 1, y: $choosen_id.getAttribute('y1') * 1 });
                     pushPoint({ x: $choosen_id.getAttribute('x2') * 1, y: $choosen_id.getAttribute('y2') * 1 });
+                    con.invoke('PushPoint', { x: $choosen_id.getAttribute('x1') * 1, y: $choosen_id.getAttribute('y1') * 1 });
+                    con.invoke('PushPoint', { x: $choosen_id.getAttribute('x2') * 1, y: $choosen_id.getAttribute('y2') * 1 });
                 }
                 object2 = $query(`[id='${choosen_id}']`).cloneNode(true);
                 undoList.push({ mode: 'move', object1: object1, object2: object2 });
 
-                if ($(`#${choosen_id}`)[0].tagName != "line") {
-                    selected_border($choosen_id.getBBox());
-                }
+                $query(`[id='${choosen_id}']`).tagName == "line" ?
+                    select({ x1: $query(`[id='${choosen_id}']`).getAttribute('x1'), x2: $query(`[id='${choosen_id}']`).getAttribute('x2'), y1: $query(`[id='${choosen_id}']`).getAttribute('y1'), y2: $query(`[id='${choosen_id}']`).getAttribute('y2') }, true) :
+                    select($choosen_id.getBBox());
             }
+            differentPosition = cursorPosition = tempPoint1 = tempPoint2 = {};
             current_scale = { x: 1, y: 1 };
-            differentPosition = cursorPosition = {}
             position = { x: 0, y: 0 };
             drag = resize = false;
             break;
-        case "text":        // Textbox
-
+        case "rect":
+        case "circle": // Rectangle & circle
+            if (e.type == "pointerup" && id) undoList.push({ mode: 'new', object: $query(`[id='${id}']`).cloneNode(true) });
             break;
-        case "rect":        // Rectangle
+        case "line": // Line
             if (e.type == "pointerup") {
-                if (id != null)
-                    undoList.push({ mode: 'new', object: $query(`[id='${id}']`).cloneNode(true) });
-                // newPath = differentPosition = cursorPosition = id = null;
-            }
-            break;
-        case "circle":      // Circle
-            if (e.type == "pointerup") {
-                if (id != null)
-                    undoList.push({ mode: 'new', object: $query(`[id='${id}']`).cloneNode(true) });
-                // newPath = differentPosition = cursorPosition = id = null;
-            }
-            break;
-        case "line":        // Line
-            if (e.type == "pointerup") {
-                if (!$.isEmptyObject(cursorPosition)) {
+                if (Object.entries(cursorPosition).length !== 0) {
                     let newPoint = { x: current_position.x.toFixed(2) * 1, y: current_position.y.toFixed(2) * 1 };
                     // Update hub point
                     let tempCursorPosition = { x: cursorPosition.x.toFixed(2) * 1, y: cursorPosition.y.toFixed(2) * 1 };
-                    pushPoint(tempCursorPosition); pushPoint(newPoint);
+                    pushPoint(tempCursorPosition);
+                    pushPoint(newPoint);
                     con.invoke("PushPoint", tempCursorPosition);
                     con.invoke("PushPoint", newPoint);
                 }
                 if (id != null) undoList.push({ mode: 'new', object: $query(`[id='${id}']`).cloneNode(true) });
-                // newPath = cursorPosition =current_position = id = null;
             }
             break;
     }
 };
+
+let svgScale = 1;
+
+// Zoom in & out
+$query("#content").onmousewheel = $query("#content").onkeydown = e => {
+    if (e.ctrlKey) {
+        e.preventDefault();
+
+        if (e.wheelDelta / 120 > 0 && svgScale < 3) svgScale += 0.05
+        else if (svgScale >= 0.2) svgScale -= 0.05
+
+        $query("#draw").setAttribute("width", svgDraw.getBBox().width * svgScale);
+        $query("#draw").setAttribute("height", svgDraw.getBBox().height * svgScale);
+        $query("#grid_wrap").setAttribute("width", svgDraw.getBBox().width * svgScale);
+        $query("#grid_wrap").setAttribute("height", svgDraw.getBBox().height * svgScale);
+        $query("#bg_grid").setAttribute("style", `transform: scale(${svgScale})`);
+    }
+};
+
+let space = false;
+// Delete selected object
+window.onkeydown = e => {
+    if (e.keyCode == 8 || e.keyCode == 46 && choosen_id) {
+        if (!choosen_id) return;
+        undoList.push({ mode: 'remove', object: $query(`[id='${choosen_id}']`) });
+        remove(choosen_id);
+        con.invoke('Remove', choosen_id);
+        select();
+    } else if (e.ctrlKey && e.keyCode == '90' && !e.repeat) {
+        select();
+        undo();
+    } else if (e.ctrlKey && e.keyCode == '89' && !e.repeat) {
+        select();
+        redo();
+    } else if (e.keyCode == 32) {
+        e.preventDefault();
+        space = true;
+        svgDraw.setAttribute("style", "cursor: grab");
+    }
+};
+
+// Grab ========================================================================================
+$query("#content").onpointerup = window.onkeyup = e => {
+    if (svgDraw.getAttribute("style")) svgDraw.removeAttribute("style");
+    grab = space = false;
+    cursorPosition = {};
+}
+
+$query("#content").onpointerdown = e => {
+    if (space) {
+        e.preventDefault();
+        cursorPosition = cursorPoint(e);
+        grab = true;
+    }
+}
 
 window.onpointerup = e => {
     e.preventDefault();
@@ -636,106 +666,84 @@ window.onpointerup = e => {
     }
 };
 
-// Zoom in & out
-svgDraw.onmousewheel = svgDraw.onkeydown = e => {
-    if (e.ctrlKey) {
-        e.preventDefault();
-        let scale = $query("#draw").getBoundingClientRect().width / $query("#draw").clientWidth;
-        if (e.wheelDelta / 120 > 0) {
-            if (scale < 5) {
-                $query("#draw").style.transform = `scale(${(scale + 0.05).toFixed(2)})`;
-                $query("#grid_wrap").style.transform = `scale(${(scale + 0.05).toFixed(2)})`;
-            }
-        } else {
-            if (scale >= 0.2) {
-                $query("#draw").style.transform = `scale(${(scale - 0.05).toFixed(2)})`;
-                $query("#grid_wrap").style.transform = `scale(${(scale - 0.05).toFixed(2)})`;
-            }
-        }
-    }
-};
-
-// Delete selected object
-window.onkeydown = e => {
-    if (e.keyCode == 8 || e.keyCode == 46 && choosen_id) {
-        if (!choosen_id) return;
-        undoList.push({ mode: 'remove', object: $query(`[id='${choosen_id}']`) });
-        remove(choosen_id); unselect();
-    }
-    else if (e.ctrlKey && e.keyCode == '90' && !e.repeat) {
-        unselect(); undo();
-    } else if (e.ctrlKey && e.keyCode == '89' && !e.repeat) {
-        unselect(); redo();
-    }
-};
-
 /* ==================================== Update by frame ====================================== */
 let rgb_H = 0;
-let secondsPassed;
-let oldTimeStamp;
-let fps;
+let secondsPassed, oldTimeStamp, fps;
 
 window.requestAnimationFrame(update); // update by frame
-
 function update(timeStamp) {
     // Calculate the number of seconds passed since the last frame
     secondsPassed = (timeStamp - oldTimeStamp) / 1000;
     oldTimeStamp = timeStamp;
 
-    // Calculate fps
-    fps = Math.round(1 / secondsPassed);
+    fps = Math.round(1 / secondsPassed); // Calculate fps
 
-    // Display fps
-    if (fps > 20) {
+    if (fps > 20) { // Display fps
         $query(`#fps`).innerHTML = fps;
         $query(`#fps`).style.color = "green";
-    }
-    else {
+    } else {
         $query(`#fps`).innerHTML = fps;
         $query(`#fps`).style.color = "red";
     }
-
-    // RGB Stroke
-    // $("#draw path:not(#resize_wrap *)").attr('stroke', `hsl(${rgb_H}, 100%, 50%)`);
-    // rgb_H < 360 ? rgb_H++ : rgb_H = 0;
-    // $("label#pen span").css("color", `hsl(${rgb_H}, 100%, 50%)`);
 
     window.requestAnimationFrame(update);
 }
 
 /* ==================================== Function ====================================== */
 function $query(selector) {
-    return document.querySelectorAll(selector).length == 1 ?
-        document.querySelector(selector) : document.querySelectorAll(selector);
+    if (document.querySelectorAll(selector).length == 1) return document.querySelector(selector);
+    else if (document.querySelectorAll(selector).length > 1) return document.querySelectorAll(selector);
+    else return null;
 }
 
-async function upload() {
+$query('#file').onchange = async (e) => {
     let f = e.target.files[0];
     let svg = $query('svg#draw').getAttribute("viewBox").split(" ");
+    // let img_width, img_height;
     if (f && f.type.startsWith('image/')) {
         // TODO: Use async-await syntax
+
         let url = await crop(f, svg[2], svg[3], 'dataURL', 'image/webp');
-        let newPath = document.createElementNS("http://www.w3.org/2000/svg", "image");
-        newPath.setAttribute('id', uuidv4());
-        newPath.setAttribute('href', url);
-        $query("#draw").appendChild(newPath);
+        let id = uuidv4();
+        insertImage(id, url.dataURL, { x: 521, y: 372 }, { x: url.nw, y: url.nh });
+        con.invoke('InsertImage', id, url.dataURL, { x: 521, y: 372 }, { x: url.nw, y: url.nh });
+        // select()
+        // let newPath = document.createElementNS("http://www.w3.org/2000/svg", "image");
+        // newPath.setAttribute('id', uuidv4());
+        // newPath.setAttribute('x', 521);
+        // newPath.setAttribute('y', 372);
+        // newPath.setAttribute('width', url.nw);
+        // newPath.setAttribute('height', url.nh);
+        // newPath.setAttribute('href', url.dataURL);
+        // $query("#draw").appendChild(newPath);
+
+
     }
 }
 
-function select(box, con) {
-    if ($query('#resize_wrap') !== null) {
-        svgDraw.removeChild($query('#resize_wrap'));
+function selectLine(id, box, point1 = false) {
+    let $line = $query(`[id='${id}']`);
+    if ($line && Object.entries(box) != 0) {
+        if (point1) {
+            let point = $query("#line_x1");
+            point.setAttribute('x', box.x - 5);
+            point.setAttribute('y', box.y - 5);
+        } else {
+            let point = $query("#line_x2");
+            point.setAttribute('x', box.x - 5);
+            point.setAttribute('y', box.y - 5);
+        }
     }
-    if ($query('#line_edit') !== null) {
-        svgDraw.removeChild($query('#line_edit'));
-    }
-    if (!box) return;
+}
 
+function select(box, line = false) {
+    if ($query('#resize_wrap')) svgDraw.removeChild($query('#resize_wrap'));
+    if ($query('#line_edit')) svgDraw.removeChild($query('#line_edit'));
+    if (!box) { choosen_id = null; return; }
     let border = "";
-
-    if (con) {
+    if (!line) {
         border = `<g id="resize_wrap">
-                    <rect id="resize_border" class='notMoveable' fill="none" stroke="lightblue" stroke-width="1px" x="${box.x}" y="${box.y}" width="${box.width}" height="${box.height}" />
+                    <rect id="resize_border" class='notMoveable' fill="none" stroke="lightblue" stroke-width="1px" x="${box.x - 5}" y="${box.y - 5}" width="${box.width + 10}" height="${box.height + 10}" />
                     <rect id="resize_nw" class="notMoveable" width="10" height="10" x="${box.x - 10}" y="${box.y - 10}" style="cursor:nw-resize"/>
                     <rect id="resize_n" class='notMoveable' width="10" height="10" x="${box.x + (box.width / 2) - 5}" y="${box.y - 10}" style="cursor:n-resize" />
                     <rect id="resize_ne" class='notMoveable' width="10" height="10" x="${box.x + box.width}" y="${box.y - 10}" style="cursor:ne-resize" />
@@ -745,56 +753,57 @@ function select(box, con) {
                     <rect id="resize_sw" class='notMoveable' width="10" height="10" x="${box.x - 10}" y="${box.y + box.height}" style="cursor:sw-resize"/>
                     <rect id="resize_w" class='notMoveable' width="10" height="10" x="${box.x - 10}" y="${box.y + (box.height / 2) - 5}" style="cursor:w-resize"/>
                   </g>`;
-
     } else {
         border = `<g id="line_edit">
                     <rect id="line_x1" class='notMoveable' width="10" height="10" x="${box.x1 - 5}" y="${box.y1 - 5}" style="cursor:move" />
                     <rect id="line_x2" class='notMoveable' width="10" height="10" x="${box.x2 - 5}" y="${box.y2 - 5}" style="cursor:move"/>
                   </g>`;
     }
-
     svgDraw.insertAdjacentHTML('beforeend', border);
-    // svgDraw.appendChild(border);
-}
-
-function unselect() {
-    if (choosen_id) {
-        $query("#resize_wrap").setAttribute("hidden", true);
-        $query("#resize_wrap").removeAttribute("style");
-        $query("#line_edit").setAttribute("hidden", true);
-        $query("#line_edit").removeAttribute("style");
-        choosen_id = null;
-    }
 }
 
 // Drawing function
-function mid(a, b) {
-    return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+let mid = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+
+function insertImage(id, url, point, box) {
+    let newPath = document.createElementNS("http://www.w3.org/2000/svg", "image");
+    newPath.setAttribute('id', id);
+    newPath.setAttribute('href', url);
+    newPath.setAttribute('x', point.x);
+    newPath.setAttribute('y', point.y);
+    newPath.setAttribute('width', box.x);
+    newPath.setAttribute('height', box.y);
+    $query("#draw").appendChild(newPath);
 }
 
-function startDraw(id, point, color, size) {
+function startDraw(id, point, color, size, fill) {
     let path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute('id', id);
     path.setAttribute('d', `M${simplifyNumber(point.x)},${simplifyNumber(point.y)}`);
     path.setAttribute("stroke", color);
+    path.setAttribute("fill", fill);
     path.setAttribute("stroke-width", `${size}px`);
     $query("svg#draw").appendChild(path);
 }
+
 function draw(id, pointA, pointB) {
     let path = $query(`[id='${id}']`);
     path.setAttribute('d',
         `${path.getAttribute('d')}Q${simplifyNumber(pointA.x)},${simplifyNumber(pointA.y)},${simplifyNumber(pointB.x)},${simplifyNumber((pointB.y))}`
     );
 }
-function startRect(id, point, color, size) {
+
+function startRect(id, point, color, size, fill) {
     let rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
     rect.setAttribute('id', id);
     rect.setAttribute("stroke", color);
+    rect.setAttribute("fill", fill);
     rect.setAttribute("stroke-width", size + "px");
     rect.setAttribute('x', simplifyNumber(point.x));
     rect.setAttribute('y', simplifyNumber(point.y));
     $query("svg#draw").appendChild(rect);
 }
+
 function drawRect(id, point, box) {
     let rect = $query(`[id='${id}']`);
     rect.setAttribute('width', simplifyNumber(box.x));
@@ -802,15 +811,18 @@ function drawRect(id, point, box) {
     rect.setAttribute('x', simplifyNumber(point.x));
     rect.setAttribute('y', simplifyNumber(point.y));
 }
-function startCircle(id, point, color, size) {  // ID,point,color,size,fillColor
+
+function startCircle(id, point, color, size) { // ID,point,color,size,fillColor
     let circle = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
     circle.setAttribute('id', id);
     circle.setAttribute('cx', simplifyNumber(point.x));
     circle.setAttribute('cy', simplifyNumber(point.y));
     circle.setAttribute('stroke', color);
+    circle.setAttribute("fill", fill);
     circle.setAttribute('stroke-width', size + "px");
-    $query("svg#draw").appendChild(circle);    // add into svg
+    $query("svg#draw").appendChild(circle); // add into svg
 }
+
 function drawCircle(id, point, box) {
     let circle = $query(`[id='${id}']`);
     circle.setAttribute('rx', simplifyNumber(box.x));
@@ -818,12 +830,12 @@ function drawCircle(id, point, box) {
     circle.setAttribute('cx', simplifyNumber(point.x));
     circle.setAttribute('cy', simplifyNumber(point.y));
 }
+
 function drawLine(id, point, point2, color, size) {
     let path = $query(`[id='${id}']`);
     if (!path) {
         path = document.createElementNS("http://www.w3.org/2000/svg", "line");
         path.setAttribute('id', id);
-        // path.setAttribute('class', "straightLine");
         path.setAttribute('stroke', color);
         path.setAttribute('stroke-width', size);
         path.setAttribute('x1', simplifyNumber(point.x));
@@ -834,16 +846,10 @@ function drawLine(id, point, point2, color, size) {
     $query("svg#draw").appendChild(path);
 }
 
-function pushPoint(point) {
-    points.push(point);
-}
+let pushPoint = (point) => points.push(point);
+let popPoint = (point) => points = points.filter(o => o.x != point.x * 1 && o.y != point.y * 1);
 
-function popPoint(point) {
-    points = points.filter(o => o.x != point.x * 1 && o.y != point.y * 1);
-}
-
-//Text function
-function startText(id, x, y, color, size) {
+function startText(id, x, y, color, size) { //Text function
     let text = document.createElementNS("http://www.w3.org/2000/svg", "text");
     text.setAttribute('id', id);
     text.setAttribute('x', x);
@@ -854,22 +860,26 @@ function startText(id, x, y, color, size) {
     $query("svg#draw").appendChild(text);
 }
 
-// Remove object
-function remove(id) {
+function remove(id) { // Remove object
     if ($query(`[id='${id}']`).tagName == 'line') {
         popPoint({ x: $query(`[id='${id}']`).getAttribute('x1') * 1, y: $query(`[id='${id}']`).getAttribute('y1') * 1 });
         popPoint({ x: $query(`[id='${id}']`).getAttribute('x2') * 1, y: $query(`[id='${id}']`).getAttribute('y2') * 1 });
+        con.invoke('PopPoint', { x: $query(`[id='${id}']`).getAttribute('x1') * 1, y: $query(`[id='${id}']`).getAttribute('y1') * 1 });
+        con.invoke('PopPoint', { x: $query(`[id='${id}']`).getAttribute('x2') * 1, y: $query(`[id='${id}']`).getAttribute('y2') * 1 });
     }
     $query(`[id='${id}']`).remove();
+    select();
 }
-function removeAll() {
-    $('svg#draw > :not("#resize_wrap")').remove();
+
+function removeAll() { // Error
+    // Remove all points, svg, 
+    svgDraw.innerHTML = "<g><rect width='1052' height='744' fill='transparent'></rect></g>";
+
+    select();
 }
-function create(object) {
-    console.log(object);
-    $query('svg#draw').appendChild(object);
-}
-//id,d,x1,y1,x2,y2
+
+let create = (object) => $query('svg#draw').appendChild(object);
+
 function moveObject(tag, object) {
     switch (tag) {
         case 'path':
@@ -895,6 +905,15 @@ function moveObject(tag, object) {
                 $query(`[id='${object.id}']`).setAttribute('height', object.height);
             }
             break;
+        case 'image':
+            if (object.x && object.y) {
+                $query(`[id='${object.id}']`).setAttribute('x', object.x);
+                $query(`[id='${object.id}']`).setAttribute('y', object.y);
+            }
+            if (object.width && object.height) {
+                $query(`[id='${object.id}']`).setAttribute('width', object.width);
+                $query(`[id='${object.id}']`).setAttribute('height', object.height);
+            }
         case 'line':
             if (object.x1 && object.y1) {
                 $query(`[id='${object.id}']`).setAttribute('x1', object.x1);
@@ -909,17 +928,16 @@ function moveObject(tag, object) {
 }
 
 // Undo event trigger
-function undo() {  // Everytime will push {event:,object:}  
+function undo() { // Everytime will push {event:,object:}  
     if (undoList.length == 0) return;
     let temp = undoList.pop();
-    let tempId = $query(temp.object).getAttribute('id');    // use for remove and new
     if (temp.mode == 'new') {
+        let tempId = temp.object.getAttribute('id');
         remove(tempId);
         con.invoke('Remove', tempId);
-    }
-    else if (temp.mode == 'move') {
-        let firstId = $(temp.object1).attr('id');
-        let secondId = $(temp.object2).attr('id');
+    } else if (temp.mode == 'move') {
+        let firstId = temp.object1.getAttribute('id');
+        let secondId = temp.object2.getAttribute('id');
         if (firstId == secondId) {
             remove(firstId);
             con.invoke('Remove', firstId);
@@ -927,32 +945,22 @@ function undo() {  // Everytime will push {event:,object:}
             con.invoke('Create', getString(temp.object1));
         }
     } else if (temp.mode == 'remove') {
-        remove(tempId);
         create(temp.object);
         con.invoke('Create', getString(temp.object));
-    } else {
-        console.log("Unknown");
-    }
+    } else console.log("Unknown");
     redoList.push(temp);
 }
 
-/*when  */
 // Redo event trigger
 function redo() {
-
     if (redoList.length == 0) return;
-
     let temp = redoList.pop();
-    console.log(temp.mode);
-    let tempId = $(temp.object).attr('id');
     if (temp.mode == 'new') {
         create(temp.object);
-        let p = getString(temp.object);
         con.invoke('Create', getString(temp.object).replace(/\"/gi, "\'"));
-    }
-    else if (temp.mode == 'move') {
-        let firstId = $(temp.object1).attr('id');
-        let secondId = $(temp.object2).attr('id');
+    } else if (temp.mode == 'move') {
+        let firstId = temp.object1.getAttribute('id');
+        let secondId = temp.object2.getAttribute('id');
         if (firstId == secondId) {
             remove(firstId);
             con.invoke('Remove', firstId);
@@ -960,103 +968,76 @@ function redo() {
             con.invoke('Create', getString(temp.object2));
         }
     } else if (temp.mode == 'remove') {
+        let tempId = temp.object.getAttribute('id');
         remove(tempId);
         con.invoke('Remove', tempId);
-    } else {
-        console.log("Unknown");
-    }
+    } else console.log("Unknown");
     undoList.push(temp);
 }
+
 function createObject(stringObject) {
-    let tempObject = new DOMParser().parseFromString(stringObject, "image/svg+xml").firstChild;
-    let newObject = $(tempObject);
-    let tag = newObject.prop('tagName');
+    let newObject = new DOMParser().parseFromString(stringObject, "image/svg+xml").firstChild;
+    let tag = newObject.tagName;
     switch (tag) {
         case 'path':
             let path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            path.setAttribute('id', newObject.attr('id'));
-            path.setAttribute('d', newObject.attr('d'));
-            path.setAttribute("stroke", newObject.attr('stroke'));
-            path.setAttribute("stroke-width", newObject.attr('stroke-width'));
+            path.setAttribute('id', newObject.getAttribute('id'));
+            path.setAttribute('d', newObject.getAttribute('d'));
+            path.setAttribute("stroke", newObject.getAttribute('stroke'));
+            path.setAttribute("stroke-width", newObject.getAttribute('stroke-width'));
             $query("svg#draw").appendChild(path);
             break;
         case 'ellipse':
             let circle = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
-            circle.setAttribute('id', newObject.attr('id'));
-            circle.setAttribute('cx', newObject.attr('cx'));
-            circle.setAttribute('cy', newObject.attr('cy'));
-            circle.setAttribute('rx', newObject.attr('rx'));
-            circle.setAttribute('ry', newObject.attr('ry'));
-            circle.setAttribute('stroke', newObject.attr('stroke'));
-            circle.setAttribute('stroke-width', newObject.attr('stroke-width'));
+            circle.setAttribute('id', newObject.getAttribute('id'));
+            circle.setAttribute('cx', newObject.getAttribute('cx'));
+            circle.setAttribute('cy', newObject.getAttribute('cy'));
+            circle.setAttribute('rx', newObject.getAttribute('rx'));
+            circle.setAttribute('ry', newObject.getAttribute('ry'));
+            circle.setAttribute('stroke', newObject.getAttribute('stroke'));
+            circle.setAttribute('stroke-width', newObject.getAttribute('stroke-width'));
             $query("svg#draw").appendChild(circle);
             break;
         case 'rect':
             let rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-            rect.setAttribute('id', newObject.attr('id'));
-            rect.setAttribute("stroke", newObject.attr('id'));
-            rect.setAttribute("stroke-width", newObject.attr('id'));
-            rect.setAttribute('x', newObject.attr('x'));
-            rect.setAttribute('y', newObject.attr('y'));
-            rect.setAttribute('width', newObject.attr('width'));
-            rect.setAttribute('height', newObject.attr('height'));
+            rect.setAttribute('id', newObject.getAttribute('id'));
+            rect.setAttribute("stroke", newObject.getAttribute('stroke'));
+            rect.setAttribute("stroke-width", newObject.getAttribute('stroke-width'));
+            rect.setAttribute('x', newObject.getAttribute('x'));
+            rect.setAttribute('y', newObject.getAttribute('y'));
+            rect.setAttribute('width', newObject.getAttribute('width'));
+            rect.setAttribute('height', newObject.getAttribute('height'));
             $query("svg#draw").appendChild(rect);
             break;
         case 'line':
             let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            line.setAttribute('id', newObject.attr('id'));
-            line.setAttribute('stroke', newObject.attr('stroke'));
-            line.setAttribute('stroke-width', newObject.attr('stroke-width'));
-            line.setAttribute('x1', newObject.attr('x1'));
-            line.setAttribute('y1', newObject.attr('y1'));
-            line.setAttribute('x2', newObject.attr('x2'));
-            line.setAttribute('y2', newObject.attr('y2'));
+            line.setAttribute('id', newObject.getAttribute('id'));
+            line.setAttribute('stroke', newObject.getAttribute('stroke'));
+            line.setAttribute('stroke-width', newObject.getAttribute('stroke-width'));
+            line.setAttribute('x1', newObject.getAttribute('x1'));
+            line.setAttribute('y1', newObject.getAttribute('y1'));
+            line.setAttribute('x2', newObject.getAttribute('x2'));
+            line.setAttribute('y2', newObject.getAttribute('y2'));
             $query("svg#draw").appendChild(line);
             break;
     }
 }
+
 // Convert the DOM to string
 var getString = (function () {
     var DIV = document.createElement("div");
 
-    if ('outerHTML' in DIV)
-        return function (node) {
-            return node.outerHTML;
-        };
-
+    if ('outerHTML' in DIV) return function (node) { return node.outerHTML; };
     return function (node) {
         var div = DIV.cloneNode();
         div.appendChild(node.cloneNode(true));
         return div.innerHTML;
     };
-
 })();
 
-
 function simplifyNumber(n) {
-    if (!$.isNumeric(n)) return;
+    if (isNaN(n)) return;
     return n.toFixed(2) % 1 != 0 ? n.toFixed(2) : n.toFixed(0);
-}
-
-// Reset selected border coordinate
-function selected_border(selected_info, line = false) {
-    if (!line) {
-        $('#resize_wrap').show();
-        $("#resize_border").attr("x", selected_info.x - 5).attr("y", selected_info.y - 5).attr("width", selected_info.width + 10).attr("height", selected_info.height + 10);
-        $("#resize_nw").attr("x", selected_info.x - 10).attr("y", selected_info.y - 10).css("cursor", "nw-resize");
-        $("#resize_n").attr("x", selected_info.x + (selected_info.width / 2) - 5).attr("y", selected_info.y - 10).css("cursor", "n-resize");
-        $("#resize_ne").attr("x", selected_info.x + selected_info.width).attr("y", selected_info.y - 10).css("cursor", "ne-resize");
-        $("#resize_e").attr("x", selected_info.x + selected_info.width).attr("y", selected_info.y + (selected_info.height / 2) - 5).css("cursor", "e-resize");
-        $("#resize_se").attr("x", selected_info.x + selected_info.width).attr("y", selected_info.y + selected_info.height).css("cursor", "se-resize");
-        $("#resize_s").attr("x", selected_info.x + (selected_info.width / 2) - 5).attr("y", selected_info.y + selected_info.height).css("cursor", "s-resize");
-        $("#resize_sw").attr("x", selected_info.x - 10).attr("y", selected_info.y + selected_info.height).css("cursor", "sw-resize");
-        $("#resize_w").attr("x", selected_info.x - 10).attr("y", selected_info.y + (selected_info.height / 2) - 5).css("cursor", "w-resize");
-    }
-    else {
-        $("#line_edit").show();
-        $("#line_x1").attr("x", selected_info.x1 - 5).attr("y", selected_info.y1 - 5).css("cursor", "move");
-        $("#line_x2").attr("x", selected_info.x2 - 5).attr("y", selected_info.y2 - 5).css("cursor", "move");
-    }
 }
 
 function uuidv4() { // ID generator
@@ -1066,18 +1047,19 @@ function uuidv4() { // ID generator
 }
 
 function comparePoint(cursor) { // Get the nearest point
-    if (!points) return
+    if (!points) return null;
     for (let point of points)
         if (cursor.x >= point.x - 10 && cursor.x <= point.x + 10 &&
             cursor.y >= point.y - 10 && cursor.y <= point.y + 10) return point;
 }
 
 /* ==================================== SVG Coordinate ====================================== */
-let svg = document.querySelector('svg');    // Find your root SVG element
-let pt = svg.createSVGPoint();  // Create an SVGPoint for future math
+let svg = document.querySelector('#draw'); // Find your root SVG element
+let pt = svg.createSVGPoint(); // Create an SVGPoint for future math
 
-function cursorPoint(evt) {     // Get point in global SVG space
-    pt.x = evt.clientX; pt.y = evt.clientY;
+function cursorPoint(evt) { // Get point in global SVG space
+    pt.x = evt.clientX;
+    pt.y = evt.clientY;
     return pt.matrixTransform(svg.getScreenCTM().inverse());
 }
 
@@ -1088,9 +1070,8 @@ if (!roomId) {
     location = 'list.html';
     throw 'ERROR: Invalid game id';
 }
-const param = $.param({ page: 'draw', name, roomId });
 const con = new signalR.HubConnectionBuilder()
-    .withUrl('/hub?' + param)
+    .withUrl(`/hub?page=draw&name=${name}&roomId=${roomId}`)
     .build();
 
 con.onclose(err => {
@@ -1099,14 +1080,14 @@ con.onclose(err => {
 });
 
 con.on('Reject', () => location = 'list.html');
-$('#leave').click(e => location = 'list.html');
+$query("[id='leave']").onclick = e => {
+    location = 'list.html';
+};
 
 con.on('Left', status => {
     var x = document.getElementById("status");
-    console.log(x.innerHTML);
     x.hidden = false;
     x.innerHTML = status;
-    console.log(x.innerHTML);
 
     setTimeout(function () {
         x.hidden = true;
@@ -1125,11 +1106,11 @@ con.on('Remove', remove);
 con.on('RemoveAll', removeAll);
 con.on('MoveObject', moveObject);
 con.on('Create', createObject);
+con.on('PopPoint', popPoint);
+con.on('InsertImage', insertImage);
+// con.on('PointerCursor',pointerCursor);
 
-con.start().then(e => main());
-
-function main() {
+con.start().then(e => {
     $query('#main').hidden = false;
-    $("#resize_wrap,#line_edit").hide();
     menu('pen');
-}
+});

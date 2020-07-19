@@ -9,16 +9,18 @@ body {
 }
 
 header {
+    /* width: 100%; */
     font-family: "Lucida Console", Courier, monospace;
     background: black;
     color: #BBD7EC;
-    padding: 20px 40px;
+    padding: 20px 30px;
+    display: block;
 }
 
 header h1 {
     margin: 0;
     padding-left: 40px;
-    background: url(favicon.png) no-repeat left center / 32px 32px;
+    background: url(../favicon.png) no-repeat left center / 32px 32px;
 }
 
 header h1 a {
@@ -33,9 +35,6 @@ header h1 a {
 }
 
 #content {
-    display: flex;
-    align-items: center;
-    justify-content: center;
     position: relative;
     overflow: hidden;
 }
@@ -118,10 +117,7 @@ path.choosen {
 }
 
 svg {
-    height: 744px;
-    width: 1052px;
     touch-action: none;
-    position: absolute;
 }
 
 #draw {
@@ -142,10 +138,11 @@ svg {
     font-family: latin;
     font-weight: bold;
     border: 1px solid black;
-    z-index: 1;
+    z-index: 999;
 }
 
-#line_x1, #line_x2 {
+#line_x1,
+#line_x2 {
     stroke: blue;
     fill: blue;
 }
@@ -154,24 +151,26 @@ svg#draw #resize_wrap * {
     vector-effect: non-scaling-stroke;
 }
 
-svg#draw > path {
+svg#draw #resize_wrap rect:not(#resize_border) {
+    stroke: black;
+    fill: black;
+}
+
+svg#draw>path {
     stroke-linecap: round;
     stroke-linejoin: round;
-    fill: transparent;
     vector-effect: non-scaling-stroke;
 }
 
-svg#draw > rect {
-    fill: transparent;
+svg#draw>rect {
     vector-effect: non-scaling-stroke;
 }
 
-svg#draw > ellipse {
-    fill: transparent;
+svg#draw>ellipse {
     vector-effect: non-scaling-stroke;
 }
 
-svg#draw > line {
+svg#draw>line {
     fill: transparent;
     stroke-linejoin: round;
     stroke-linecap: round;
@@ -187,14 +186,15 @@ svg#draw > line {
     z-index: 9999;
 }
 
-.selection > input, .selection > datalist {
+.selection>input,
+.selection>datalist {
     margin: 5px;
     margin-right: 20px;
 }
 
 #status {
     position: absolute;
-    top: 15%; 
+    top: 15%;
     left: 50%;
     padding: 5px;
     text-align: center;
@@ -203,6 +203,7 @@ svg#draw > line {
     width: auto;
     transition: 0.1s;
     z-index: 1;
+    margin-top: 10px;
     /* visibility: hidden; */
 }
 
@@ -217,9 +218,33 @@ svg#draw > line {
     border-radius: 5px;
     display: inline-block;
     font-size: 16px;
+    z-index: 1;
 }
 
 #color {
     padding-top: 5px;
     padding-bottom: 5px;
+}
+
+
+/* .rgba{
+
+} */
+
+@keyframes cycle {
+    0% {
+        color: rgb(255, 127, 8)
+    }
+    20% {
+        color: rgb(36, 46, 25)
+    }
+    40% {
+        color: rgb(12, 220, 235);
+    }
+    60% {
+        color: rgb(199, 13, 236);
+    }
+    80% {
+        color: rgb(247, 9, 9);
+    }
 }

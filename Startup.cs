@@ -17,7 +17,9 @@ namespace Drawing
         public void ConfigureServices(IServiceCollection services)
         {
             //Upload size available
-            services.AddSignalR();
+            services.AddSignalR(options=>{
+                options.MaximumReceiveMessageSize = 128 * 1024;
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
