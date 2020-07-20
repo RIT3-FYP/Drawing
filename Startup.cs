@@ -17,9 +17,10 @@ namespace Drawing
         public void ConfigureServices(IServiceCollection services)
         {
             //Upload size available
-            services.AddSignalR(options=>{
+            services.AddSignalR(options =>
+            {
                 options.MaximumReceiveMessageSize = 128 * 1024;
-            });
+            }).AddAzureSignalR("Endpoint=https://justdraw.service.signalr.net;AccessKey=DOwWbHKelm4mhDWpzA3gCb4lupNbwhc346jbHQH8/lA=;Version=1.0;");
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -32,8 +33,8 @@ namespace Drawing
 
             app.UseFileServer();
             app.UseRouting();
-
-            app.UseEndpoints(endpoints =>
+            
+            app.UseAzureSignalR(endpoints =>
             {
                 // Configure singalr
                 endpoints.MapHub<DrawHub>("/hub");

@@ -1,56 +1,65 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Drawing
 {
-     public class User
-     {
-         public string Id { get; set; }
+    public class User
+    {
+        public string Id { get; set; }
 
-         public string Color{get;set;}
-         public string Name { get; set; }
+        public string Color { get; set; } 
+        public string Name { get; set; }
 
-         public User(string id, string name) => (Id, Name) = (id, name);
+        public User(string id,string color, string name) => (Id,Color, Name) = (id,color, name);
 
-     }
-     public class DrawObject{
-         public string Tag { get; set; }
-         public string Id { get; set; }
-         public string Color { get; set; }
-         public int Size { get; set; }
-         public Point Point1 { get; set; }
-         public Point Point2 { get; set; }
-         public string Fill{get;set;}  = "none";
+    }
+    public class DrawObject
+    {
+        public string Id { get; set; }
+        public string Tag { get; set; }
+        public string Color { get; set; }
+        public int Size { get; set; }
+        public Point Point1 { get; set; }
+        public Point Point2 { get; set; }
+        public string Fill { get; set; } = "none";
 
-         public DrawObject(string tag,string id,string color,int size,Point p1, Point p2,string fill) => (Tag,Id,Color,Size,Point1,Point2,Fill) = (tag,id,color,size,p1,p2,fill);
-         public DrawObject(string tag,string id,string color,int size,Point p1, Point p2) => (Tag,Id,Color,Size,Point1,Point2,Fill) = (tag,id,color,size,p1,p2,"none");
-
-
-     }
-     public class Point
-        {
-            public double X { get; set; }
-            public double Y { get; set; }
-        }
+        public DrawObject(string tag, string id, string color, int size, Point p1, Point p2, string fill) => (Tag, Id, Color, Size, Point1, Point2, Fill) = (tag, id, color, size, p1, p2, fill);
+        public DrawObject(string tag, string id, string color, int size, Point p1, Point p2) => (Tag, Id, Color, Size, Point1, Point2, Fill) = (tag, id, color, size, p1, p2, "none");
 
 
-     public class Room
-     {
-         public string Id { get; set; } = Guid.NewGuid().ToString();
-         public string Name { get; set; } = "ROOM" + Guid.NewGuid().ToString();
+    }
+    public class Point
+    {
+        public double X { get; set; }
+        public double Y { get; set; }
+    }
 
-        public List<User> Users{ get; set;}
-         public List<DrawObject> drawObject { get; set; }
-         public int NoOfUsers { get; set; }
-         public bool IsEmpty => NoOfUsers == 0;
 
-        public void AddUser(User user)
-        {          
-            
-        }
-     }
+    public class Room
+    {
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+        public string Name { get; set; } = "ROOM" + Guid.NewGuid().ToString();
+
+        public static List<User> users = new List<User>();
+        public static List<DrawObject> drawObjects = new List<DrawObject>();
+        public int NoOfUsers { get; set; }
+        public bool IsEmpty => NoOfUsers == 0;
+        public User GetUser(string id)=>users.Find(r=>r.Id == id);
+        public void AddUser(User user) => users.Add(user);
+    
+        public void RemoveUser(string id)=> users.Remove(users.Find(r => r.Id == id));
+
+        public DrawObject GetDraw(string id)=>drawObjects.Find(r=>r.Id == id);
+        public void AddDraw(DrawObject o)=>drawObjects.Add(o);
+
+        public void RemoveDraw(string id)=> drawObjects.Remove(drawObjects.Find(r => r.Id == id));
+
+        
+    
+    }
 
     // Hub
     public class DrawHub : Hub
@@ -64,7 +73,7 @@ namespace Drawing
             return room.Id;
         }
 
-        
+
         // Class needed
         // public class DrawObject
         // {
@@ -76,17 +85,17 @@ namespace Drawing
         //     public List<Point> points { get; set; }
         // }
 
-        public class Command
-        {
-            public string Name { get; set; }
-            public object[] Param { get; set; }
-            // public Command(string name, object[] param){
-            //     Name = name;
-            //     Param = param;
-            // }
-            public Command(string name, object[] param) => (Name, Param) = (name, param);
+        // public class Command
+        // {
+        //     public string Name { get; set; }
+        //     public object[] Param { get; set; }
+        //     // public Command(string name, object[] param){
+        //     //     Name = name;
+        //     //     Param = param;
+        //     // }
+        //     public Command(string name, object[] param) => (Name, Param) = (name, param);
 
-        }
+        // }
 
 
         // public async Task SendLine(Point a, Point b, int size, string color)
@@ -112,72 +121,184 @@ namespace Drawing
         //     commands.Clear();
         //     await Clients.Others.SendAsync("ReceiveClear");
         // }
-        private static List<Command> commands = new List<Command>();
+        // private static List<Command> commands = new List<Command>();
 
         public async Task StartDraw(string id, Point point, string color, string size, string fill)
         {
             // commands.Add(new Command("startDraw", new Object[] { id, point, color, size }));
-            await Clients.Others.SendAsync("StartDraw", id, point, color, size, fill);
+            string roomId = Context.GetHttpContext().Request.Query["roomId"];
+            Room room = rooms.Find(r => r.Id == roomId);
+            if (room == null)
+            {
+                await Clients.Caller.SendAsync("Reject");
+            }
+            await Clients.OthersInGroup(roomId).SendAsync("StartDraw", id, point, color, size, fill);
+
+            // await Clients.Others.SendAsync("StartDraw", id, point, color, size, fill);
         }
         public async Task Draw(string id, Point pointA, Point pointB)
         {
             // commands.Add(new Command("Draw", new Object[] { id, pointA, pointB }));
-            await Clients.Others.SendAsync("Draw", id, pointA, pointB);
+            string roomId = Context.GetHttpContext().Request.Query["roomId"];
+            Room room = rooms.Find(r => r.Id == roomId);
+            if (room == null)
+            {
+                await Clients.Caller.SendAsync("Reject");
+            }
+            await Clients.OthersInGroup(roomId).SendAsync("Draw", id, pointA, pointB);
+            // await Clients.Others.SendAsync("Draw", id, pointA, pointB);
         }
 
         public async Task StartRect(string id, Point point, string color, string size, string fill)
         {
-            await Clients.Others.SendAsync("StartRect", id, point, color, size, fill);
+            string roomId = Context.GetHttpContext().Request.Query["roomId"];
+            Room room = rooms.Find(r => r.Id == roomId);
+            if (room == null)
+            {
+                await Clients.Caller.SendAsync("Reject");
+            }
+            await Clients.OthersInGroup(roomId).SendAsync("StartRect", id, point, color, size, fill);
         }
         public async Task DrawRect(string id, Point point, Point box)
         {
-            await Clients.Others.SendAsync("DrawRect", id, point, box);
+            string roomId = Context.GetHttpContext().Request.Query["roomId"];
+            Room room = rooms.Find(r => r.Id == roomId);
+            if (room == null)
+            {
+                await Clients.Caller.SendAsync("Reject");
+            }
+            await Clients.OthersInGroup(roomId).SendAsync("DrawRect", id, point, box);
         }
         public async Task StartCircle(string id, Point point, string color, string size, string fill)
         {
-            await Clients.Others.SendAsync("StartCircle", id, point, color, size, fill);
+            string roomId = Context.GetHttpContext().Request.Query["roomId"];
+            Room room = rooms.Find(r => r.Id == roomId);
+            if (room == null)
+            {
+                await Clients.Caller.SendAsync("Reject");
+            }
+            await Clients.OthersInGroup(roomId).SendAsync("StartCircle", id, point, color, size, fill);
         }
         public async Task DrawCircle(string id, Point point, Point box)
         {
-            await Clients.Others.SendAsync("DrawCircle", id, point, box);
+            string roomId = Context.GetHttpContext().Request.Query["roomId"];
+            Room room = rooms.Find(r => r.Id == roomId);
+            if (room == null)
+            {
+                await Clients.Caller.SendAsync("Reject");
+            }
+            await Clients.OthersInGroup(roomId).SendAsync("DrawCircle", id, point, box);
         }
 
         public async Task DrawLine(string id, Point point1, Point point2, string color, string size)
         {
-            await Clients.Others.SendAsync("DrawLine", id, point1, point2, color, size);
+            string roomId = Context.GetHttpContext().Request.Query["roomId"];
+            Room room = rooms.Find(r => r.Id == roomId);
+            if (room == null)
+            {
+                await Clients.Caller.SendAsync("Reject");
+            }
+            await Clients.OthersInGroup(roomId).SendAsync("DrawLine", id, point1, point2, color, size);
         }
         public async Task PushPoint(Point point)
         {
-            await Clients.Others.SendAsync("PushPoint", point);
+            string roomId = Context.GetHttpContext().Request.Query["roomId"];
+            Room room = rooms.Find(r => r.Id == roomId);
+            if (room == null)
+            {
+                await Clients.Caller.SendAsync("Reject");
+            }
+            await Clients.OthersInGroup(roomId).SendAsync("PushPoint", point);
         }
         public async Task PopPoint(Point point)
         {
-            await Clients.Others.SendAsync("PopPoint", point);
+            string roomId = Context.GetHttpContext().Request.Query["roomId"];
+            Room room = rooms.Find(r => r.Id == roomId);
+            if (room == null)
+            {
+                await Clients.Caller.SendAsync("Reject");
+            }
+            await Clients.OthersInGroup(roomId).SendAsync("PopPoint", point);
         }
 
-        public async Task Remove(string id)
+        public async Task RemoveObject(string id)
         {
-            await Clients.Others.SendAsync("Remove", id);
+            string roomId = Context.GetHttpContext().Request.Query["roomId"];
+            Room room = rooms.Find(r => r.Id == roomId);
+            if (room == null)
+            {
+                await Clients.Caller.SendAsync("Reject");
+            }
+            await Clients.OthersInGroup(roomId).SendAsync("RemoveObject", id);
         }
-        public async Task RemoveAll()
+        public async Task RemoveAllObject()
         {
-            await Clients.Others.SendAsync("RemoveAll");
+            string roomId = Context.GetHttpContext().Request.Query["roomId"];
+            Room room = rooms.Find(r => r.Id == roomId);
+            if (room == null)
+            {
+                await Clients.Caller.SendAsync("Reject");
+            }
+            await Clients.OthersInGroup(roomId).SendAsync("RemoveAllObject");
         }
         public async Task Create(string obj)
         {
-            await Clients.Others.SendAsync("Create", obj);
+            string roomId = Context.GetHttpContext().Request.Query["roomId"];
+            Room room = rooms.Find(r => r.Id == roomId);
+            if (room == null)
+            {
+                await Clients.Caller.SendAsync("Reject");
+            }
+            await Clients.OthersInGroup(roomId).SendAsync("Create", obj);
         }
-        public async Task MoveObject(string id, Object obj){
-             await Clients.Others.SendAsync("MoveObject",id, obj);
+        public async Task MoveObject(string id, Object obj)
+        {
+            string roomId = Context.GetHttpContext().Request.Query["roomId"];
+            Room room = rooms.Find(r => r.Id == roomId);
+            if (room == null)
+            {
+                await Clients.Caller.SendAsync("Reject");
+            }
+            await Clients.OthersInGroup(roomId).SendAsync("MoveObject", id, obj);
         }
 
-        public async Task InsertImage(string id, string url,Point point1,Point point2){
-             await Clients.Others.SendAsync("InsertImage",id, url,point1,point2);
+        public async Task InsertImage(string id, string url, Point point1, Point point2)
+        {
+            string roomId = Context.GetHttpContext().Request.Query["roomId"];
+            Room room = rooms.Find(r => r.Id == roomId);
+            if (room == null)
+            {
+                await Clients.Caller.SendAsync("Reject");
+            }
+            await Clients.OthersInGroup(roomId).SendAsync("InsertImage", id, url, point1, point2);
         }
-        // public async Task PointerCursor(Point point){
-        //      await Clients.Others.SendAsync("PointerCursor",point);
-        // }
+       
         
+
+        // public async Task InsertObjectIntoList(DrawObject o)
+        // {
+        //     string roomId = Context.GetHttpContext().Request.Query["roomId"];
+
+        //     Room room = rooms.Find(r => r.Id == roomId);
+        //     if (room == null)
+        //     {
+        //         await Clients.Caller.SendAsync("Reject");
+        //     }
+        //     // room.draw
+        //     await Clients.Group(roomId).SendAsync("Start");
+        // }
+        // public async Task DeleteObjectInList(DrawObject o)
+        // {
+        //     string roomId = Context.GetHttpContext().Request.Query["roomId"];
+
+        //     Room room = rooms.Find(r => r.Id == roomId);
+        //     if (room == null)
+        //     {
+        //         await Clients.Caller.SendAsync("Reject");
+        //     }
+        //     // room.draw
+        //     await Clients.Group(roomId).SendAsync("Start");
+        // }
         // List and room connection
 
         public async Task Start()
@@ -185,13 +306,12 @@ namespace Drawing
             string roomId = Context.GetHttpContext().Request.Query["roomId"];
 
             Room room = rooms.Find(r => r.Id == roomId);
-            if (roomId == null)
+            if (room == null)
             {
                 await Clients.Caller.SendAsync("Reject");
             }
 
             await Clients.Group(roomId).SendAsync("Start");
-                
         }
 
         // Update Room List
@@ -230,6 +350,8 @@ namespace Drawing
 
         private async Task RoomConnected()
         {
+            Random rnd = new Random();
+
             string id = Context.ConnectionId;
             string name = Context.GetHttpContext().Request.Query["name"];
             string roomId = Context.GetHttpContext().Request.Query["roomId"];
@@ -240,13 +362,22 @@ namespace Drawing
                 await Clients.Caller.SendAsync("Reject");
                 return;
             }
-
-            User newUser = new User(id, name);
-            await Groups.AddToGroupAsync(id, roomId);
-            string username = Context.GetHttpContext().Request.Query["name"];
-            await Clients.Group(roomId).SendAsync("Left", $"<b>{username}</b> joined");
+            string randomColor = Color.FromArgb(rnd.Next(256), rnd.Next(256), rnd.Next(256)).ToString();
+            // User newUser = new User(id,randomColor, name);
+            // User userInRoom = room.GetUser(id);
+            // if(userInRoom != null){
+            //     await Clients.Caller.SendAsync("Reject");
+            //     return;
+            // }
+                await Groups.AddToGroupAsync(id, roomId);
+                //here
+                // room.AddUser(newUser);
+                await Clients.Group(roomId).SendAsync("Left", $"<b>{name}</b> joined");
+                room.NoOfUsers++;
+            
+            
             //await Clients.Group(roomId).SendAsync("Ready", newUser);
-            room.NoOfUsers++;
+            
             await UpdateList();
         }
 
@@ -281,7 +412,7 @@ namespace Drawing
             }
 
             string username = Context.GetHttpContext().Request.Query["name"];
-            await Clients.Group(roomId).SendAsync("Left", $"<b>{username}</b> left");
+            await Clients.OthersInGroup(roomId).SendAsync("Left", $"<b>{username}</b> left");
             room.NoOfUsers--;
 
             if (room.IsEmpty)
@@ -291,4 +422,4 @@ namespace Drawing
             }
         }
     }
-}
+}                      
