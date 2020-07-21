@@ -7,7 +7,7 @@
     <title>Drawing</title>
     <link rel="shortcut icon" href="favicon.png" type="image/png">
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/draw.css">
 </head>
 
 <body>
@@ -20,7 +20,7 @@
             </h1>
             <button id="leave" style="cursor: pointer;">Leave</button>
         </header>
-        
+
         <div id="status">status</div>
         <div class="selection">
             <div>
@@ -43,7 +43,9 @@
                     <option value="25">
                     <option value="30">
                 </datalist>
-                口
+            </div>
+            <div id="box">
+                <div id="preview"></div>
             </div>
             <div>
                 Colour : <input type="color" id="color" list="colors">
@@ -75,9 +77,9 @@
                     <option value="#999999">
                 </datalist>
             </div>
-            <div id="xcoord">xcoord</div>
-            <div id="ycoord">ycoord</div>
-            <div id="svgScale">svgScale</div>
+            x: <div id="xcoord"></div>
+            y: <div id="ycoord"></div>
+            <div id="svgScale"></div>
         </div>
         <div id="nav">
             <!-- Creating radio buttons -->
@@ -118,24 +120,21 @@
         </div>
 
         <svg id="content" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-            <svg x="10" y="10" id="grid_wrap" width="1052" height="744">
-                <defs>
-                    <pattern id="smallGrid" width="8" height="8" patternUnits="userSpaceOnUse">
-                        <path d="M8,0L0,0,0,8" fill="none" stroke="#cccccc" stroke-width="0.5" />
-                    </pattern>
-                    <pattern id="grid" width="80" height="80" patternUnits="userSpaceOnUse">
-                        <rect width="80" height="80" fill="url(#smallGrid)" />
-                        <path d="M80,0L0,0,0,80" fill="none" stroke="#cccccc" stroke-width="1" />
-                    </pattern>
-                </defs>
-
-                <rect width="100%" height="100%" fill="white" />
-                <rect id="bg_grid" width="500%" height="500%" fill="url(#grid)" />
-            </svg>
             <svg x="10" y="10" id="draw" viewBox="0 0 1052 744" fill="white" width="1052" height="744"
                 overflow="hidden">
                 <g>
-                    <rect width="1052" height="744" fill="transparent"></rect>
+                    <defs>
+                        <pattern id="smallGrid" width="8" height="8" patternUnits="userSpaceOnUse">
+                            <path d="M8,0L0,0,0,8" fill="none" stroke="#cccccc" stroke-width="0.5" />
+                        </pattern>
+                        <pattern id="grid" width="80" height="80" patternUnits="userSpaceOnUse">
+                            <rect width="80" height="80" fill="url(#smallGrid)" />
+                            <path d="M80,0L0,0,0,80" fill="none" stroke="#cccccc" stroke-width="1" />
+                        </pattern>
+                    </defs>
+    
+                    <rect width="100%" height="100%" fill="white" class="notMoveable" />
+                    <rect id="bg_grid" width="100%" height="100%" fill="url(#grid)" class="notMoveable" />
                 </g>
             </svg>
         </svg>
@@ -143,7 +142,7 @@
 
     <script src="js/signalr.js"></script>
     <script src="js/image.js"></script>
-    <script src="js/main.js"></script>
+    <script src="js/draw.js"></script>
 </body>
 
 </html>

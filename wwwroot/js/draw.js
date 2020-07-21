@@ -1,7 +1,6 @@
 "use strict"
 // ================ Global variables =================
-let id = null,
-    choosen_id = null;
+let id = null, choosen_id = null;
 let undoList = []; // Push the id with action
 let redoList = []; // After undo, push the undoList to the redoList
 let points = []; // Used in Draw Line
@@ -11,37 +10,58 @@ let coordinates = [];
 let resize_angle;
 
 // Coordinate variables
-let cursorPosition = {},
-    differentPosition = {},
-    position = { x: 0, y: 0 };
-let tempPoint1 = {},
-    tempPoint2 = {};
-let scale = { x: 1.00, y: 1.00 },
-    current_scale = { x: 1.00, y: 1.00 };
+let cursorPosition = {}, differentPosition = {}, position = { x: 0, y: 0 };
+let tempPoint1 = {}, tempPoint2 = {};
+let scale = { x: 1.00, y: 1.00 }, current_scale = { x: 1.00, y: 1.00 };
+let svgScale = 1;
 
 // Flag
-let drag = false,
-    resize = false,
-    grab = false;
+let drag = false, resize = false, grab = false;
 
 let svgDraw = $query('svg#draw'); // draw svg
 
+window.onload = e => {  // starting
+    $query('#svgScale').innerText = `${svgScale * 100}%`;
+
+    app.size = $query('#size').value;
+    app.color = $query('#color').value;
+    app.fill = $query('#fill').value == "#ffffff" ? "transparent" : $query('#fill').value;
+
+    $query('#preview').style.width = `${app.size}px`;
+    $query('#preview').style.height = `${app.size}px`;
+    $query('#preview').style.border = `1px solid ${app.color}`;
+    $query('#preview').style.background = `${app.fill}`;
+    $query('#xcoord').innerText = "0.00";
+    $query('#ycoord').innerText = "0.00";
+};
+
+
+
 $query('#size').oninput = e => {
     app.size = $query('#size').value;
+    $query('#preview').style.width = `${app.size}px`;
+    $query('#preview').style.height = `${app.size}px`;
 };
 
 $query('#color').oninput = e => {
     app.color = $query('#color').value;
+    $query('#preview').style.border = `1px solid ${app.color}`;
 };
 
 $query('#fill').oninput = e => {
-    if ($query('#fill').value == "#ffffff") {
-        app.fill = "transparent";
-    }
-    else {
-        app.fill = $query('#fill').value;
-    }
-}
+    app.fill = $query('#fill').value == "#ffffff" ? "transparent" : $query('#fill').value;
+    $query('#preview').style.background = `${app.fill}`;
+};
+
+// function triggerEvent(el, type) {
+//     if ((el[type] || false) && typeof el[type] == 'function') {
+//         el[type](el);
+//     }
+// };
+
+// triggerEvent($query('#size'), 'oninput');
+// triggerEvent($query('#color'), 'oninput');
+// triggerEvent($query('#fill'), 'oninput');
 
 function menu(value) {
     app.type = value;
@@ -52,76 +72,64 @@ function menu(value) {
 }
 
 svgDraw.onpointerdown = svgDraw.onpointerenter = e => {
-    if (e.buttons == 1 && e.isPrimary && !grab) {
+    if (e.buttons == 1 && e.isPrimary) {
         e.preventDefault();
         let current_position = cursorPoint(e);
-        if (choosen_id && e.target.tagName == "svg") select();
+        if (choosen_id && (e.target.tagName == "svg" || e.target.id == "bg_grid")) select();
 
-        switch (app.type) {
-            case "pen":
-                select();
-                break; // Draw
-            case "cursor": // Move 
-                let resize_target = ["resize_nw", "resize_n", "resize_ne", "resize_e", "resize_se", "resize_s", "resize_sw", "resize_w", "line_x1", "line_x2"];
-                let drag_target = ["path", "rect", "ellipse", "text", "image", "line"];
+        $query('#xcoord').innerHTML = simplifyNumber(current_position.x);
+        $query('#ycoord').innerHTML = simplifyNumber(current_position.y);
 
-                if (resize_target.includes(e.target.id) && choosen_id) {
-                    resize_angle = e.target.id;
-                    cursorPosition = current_position;
-                    if ($query(`[id='${choosen_id}']`).tagName == 'line') {
-                        tempPoint1 = { x: $query(`[id='${choosen_id}']`).getAttribute('x1'), y: $query(`[id='${choosen_id}']`).getAttribute('y1') };
-                        tempPoint2 = { x: $query(`[id='${choosen_id}']`).getAttribute('x2'), y: $query(`[id='${choosen_id}']`).getAttribute('y2') };
-                    }
-                    drag = false;
-                    resize = true;
-                } else if (drag_target.includes(e.target.tagName) && !resize_target.includes(e.target.id) && e.target.id != "resize_border" && !e.target.classList.contains("notMoveable")) {
-                    select();
-                    choosen_id = e.target.id;
-                    if (!choosen_id) break;
-                    if (e.target.tagName == "line") {
-                        tempPoint1 = { x: $query(`[id='${choosen_id}']`).getAttribute('x1') * 1, y: $query(`[id='${choosen_id}']`).getAttribute('y1') * 1 };
-                        tempPoint2 = { x: $query(`[id='${choosen_id}']`).getAttribute('x2') * 1, y: $query(`[id='${choosen_id}']`).getAttribute('y2') * 1 };
-                        select({ x1: $query(`[id='${choosen_id}']`).getAttribute('x1'), x2: $query(`[id='${choosen_id}']`).getAttribute('x2'), y1: $query(`[id='${choosen_id}']`).getAttribute('y1'), y2: $query(`[id='${choosen_id}']`).getAttribute('y2') }, true);
-                    } else select($query(`[id='${choosen_id}']`).getBBox());
-                    cursorPosition = current_position;
-                    resize = false;
-                    drag = true;
-                }
-                break;
-            case "rect":
-                select(); // Rectangle
-                if (!newPath) {
-                    newPath = true;
-                    cursorPosition = { x: current_position.x, y: current_position.y };
-                }
-                break;
-            case "circle":
-                select(); // Circle
-                if (!newPath) {
-                    newPath = true;
-                    cursorPosition = { x: current_position.x, y: current_position.y };
-                }
-                break;
-            case "line":
-                select();
-                break; // Line
+        if (space && e.type == "pointerdown") {
+            grab = true;
+        }
+        else {
+            switch (app.type) {
+                case "pen": select(); break; // Draw
+                case "cursor": // Move 
+                    let resize_target = ["resize_nw", "resize_n", "resize_ne", "resize_e", "resize_se", "resize_s", "resize_sw", "resize_w", "line_x1", "line_x2"];
+                    let drag_target = ["path", "rect", "ellipse", "text", "image", "line"];
+
+                    if (resize_target.includes(e.target.id) && choosen_id) {
+                        resize_angle = e.target.id;
+                        cursorPosition = current_position;
+                        if ($query(`[id='${choosen_id}']`).tagName == 'line') {
+                            tempPoint1 = { x: $query(`[id='${choosen_id}']`).getAttribute('x1'), y: $query(`[id='${choosen_id}']`).getAttribute('y1') };
+                            tempPoint2 = { x: $query(`[id='${choosen_id}']`).getAttribute('x2'), y: $query(`[id='${choosen_id}']`).getAttribute('y2') };
+                        }
+                        drag = false; resize = true;
+                    } else if (drag_target.includes(e.target.tagName) && !resize_target.includes(e.target.id) && e.target.id != "resize_border" && !e.target.classList.contains("notMoveable")) {
+                        select();
+                        choosen_id = e.target.id;
+                        if (!choosen_id) break;
+                        if (e.target.tagName == "line") {
+                            tempPoint1 = { x: $query(`[id='${choosen_id}']`).getAttribute('x1') * 1, y: $query(`[id='${choosen_id}']`).getAttribute('y1') * 1 };
+                            tempPoint2 = { x: $query(`[id='${choosen_id}']`).getAttribute('x2') * 1, y: $query(`[id='${choosen_id}']`).getAttribute('y2') * 1 };
+                            select({ x1: $query(`[id='${choosen_id}']`).getAttribute('x1'), x2: $query(`[id='${choosen_id}']`).getAttribute('x2'), y1: $query(`[id='${choosen_id}']`).getAttribute('y1'), y2: $query(`[id='${choosen_id}']`).getAttribute('y2') }, true);
+                        } else select($query(`[id='${choosen_id}']`).getBBox());
+                        cursorPosition = current_position;
+                        resize = false; drag = true;
+                    } break;
+                case "circle": case "rect": select(); // Rectangle & Circle
+                    if (!newPath) {
+                        newPath = true;
+                        cursorPosition = { x: current_position.x, y: current_position.y };
+                    } break;
+                case "line": select(); break; // Line
+            }
         }
     }
 };
 
 svgDraw.onpointermove = e => {
-
     if (e.buttons == 1 && e.isPrimary) {
         e.preventDefault();
         let current_position = cursorPoint(e);
 
         if (grab && space) {
-            differentPosition.x = current_position.x - cursorPosition.x;
-            differentPosition.y = current_position.y - cursorPosition.y;
-            svgDraw.setAttribute("x", Number(svgDraw.getAttribute("x")) + differentPosition.x);
-            svgDraw.setAttribute("y", Number(svgDraw.getAttribute("y")) + differentPosition.y);
-            $query('#grid_wrap').setAttribute("x", Number(svgDraw.getAttribute("x")) + differentPosition.x);
-            $query('#grid_wrap').setAttribute("y", Number(svgDraw.getAttribute("y")) + differentPosition.y);
+            svgDraw.setAttribute("x", Number(svgDraw.getAttribute("x")) + e.movementX);
+            svgDraw.setAttribute("y", Number(svgDraw.getAttribute("y")) + e.movementY);
+
         } else {
             redoUndoStatus("redo");
             switch (app.type) {
@@ -138,8 +146,9 @@ svgDraw.onpointermove = e => {
                         let midPoint = mid(coordinates[1], coordinates[2]);
                         draw(id, coordinates[1], midPoint);
                         con.invoke("Draw", id, coordinates[1], midPoint);
-                    }
-                    break;
+                        $query('#xcoord').innerHTML = simplifyNumber(current_position.x);
+                        $query('#ycoord').innerHTML = simplifyNumber(current_position.y);
+                    } break;
                 case "cursor": // Move
                     if (!choosen_id) break;
                     if (drag) {
@@ -150,64 +159,60 @@ svgDraw.onpointermove = e => {
                         let selected_info = $query(`[id='${choosen_id}']`).getBBox();
 
                         if (resize_angle == "resize_e") {
-                            differentPosition.x = current_position.x - (selected_info.x + selected_info.width);
-                            current_scale.x = Math.max((differentPosition.x + selected_info.width) / selected_info.width, 0.1);
+                            current_scale.x = Math.max((current_position.x - (selected_info.x + selected_info.width) + selected_info.width) / selected_info.width, 0.1);
 
                             $query(`[id='${choosen_id}']`).style.transform = `translate(${selected_info.x}px,0) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x}px,0)`
                             $query('#resize_wrap').style.transform = `translate(${selected_info.x}px,0) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x}px,0)`
                         } else if (resize_angle == "resize_w") {
-                            differentPosition.x = selected_info.x - current_position.x;
-                            current_scale.x = Math.max((differentPosition.x + selected_info.width) / selected_info.width, 0.1);
+                            current_scale.x = Math.max((selected_info.x - current_position.x + selected_info.width) / selected_info.width, 0.1);
 
                             $query(`[id='${choosen_id}']`).style.transform = `translate(${selected_info.x + selected_info.width}px,0) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x + selected_info.width}px,0)`;
                             $query(`#resize_wrap`).style.transform = `translate(${selected_info.x + selected_info.width}px,0) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x + selected_info.width}px,0)`;
                         } else if (resize_angle == "resize_s") {
-                            differentPosition.y = current_position.y - (selected_info.y + selected_info.height);
-                            current_scale.y = Math.max((differentPosition.y + selected_info.height) / selected_info.height, 0.1);
+                            current_scale.y = Math.max((current_position.y - (selected_info.y + selected_info.height) + selected_info.height) / selected_info.height, 0.1);
 
                             $query(`[id='${choosen_id}']`).style.transform = `translate(0,${selected_info.y}px) scale(${current_scale.x},${current_scale.y}) translate(0,-${selected_info.y}px)`;
                             $query(`#resize_wrap`).style.transform = `translate(0,${selected_info.y}px) scale(${current_scale.x},${current_scale.y}) translate(0,-${selected_info.y}px)`;
                         } else if (resize_angle == "resize_n") {
-                            differentPosition.y = selected_info.y - current_position.y;
-                            current_scale.y = Math.max((differentPosition.y + selected_info.height) / selected_info.height, 0.1);
+                            current_scale.y = Math.max((selected_info.y - current_position.y + selected_info.height) / selected_info.height, 0.1);
 
                             $query(`[id='${choosen_id}']`).style.transform = `translate(0,${selected_info.y + selected_info.height}px) scale(${current_scale.x},${current_scale.y}) translate(0,-${selected_info.y + selected_info.height}px)`;
                             $query(`#resize_wrap`).style.transform = `translate(0,${selected_info.y + selected_info.height}px) scale(${current_scale.x},${current_scale.y}) translate(0,-${selected_info.y + selected_info.height}px)`;
                         } else if (resize_angle == "resize_se") {
-                            differentPosition.y = current_position.y - (selected_info.y + selected_info.height);
-                            differentPosition.x = current_position.x - (selected_info.x + selected_info.width);
-                            current_scale.y = Math.max((differentPosition.y + selected_info.height) / selected_info.height, 0.1);
-                            current_scale.x = Math.max((differentPosition.x + selected_info.width) / selected_info.width, 0.1);
+                            current_scale = {
+                                x: Math.max((current_position.x - (selected_info.x + selected_info.width) + selected_info.width) / selected_info.width, 0.1),
+                                y: Math.max((current_position.y - (selected_info.y + selected_info.height) + selected_info.height) / selected_info.height, 0.1)
+                            }
 
                             if (e.shiftKey) current_scale.x > current_scale.y ? current_scale.y = current_scale.x : current_scale.x = current_scale.y;
 
                             $query(`[id='${choosen_id}']`).style.transform = `translate(${selected_info.x}px,${selected_info.y}px) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x}px,-${selected_info.y}px)`;
                             $query(`#resize_wrap`).style.transform = `translate(${selected_info.x}px,${selected_info.y}px) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x}px,-${selected_info.y}px)`;
                         } else if (resize_angle == "resize_nw") {
-                            differentPosition.x = selected_info.x - current_position.x;
-                            differentPosition.y = selected_info.y - current_position.y;
-                            current_scale.x = Math.max((differentPosition.x + selected_info.width) / selected_info.width, 0.1);
-                            current_scale.y = Math.max((differentPosition.y + selected_info.height) / selected_info.height, 0.1);
+                            current_scale = {
+                                x: Math.max((selected_info.x - current_position.x + selected_info.width) / selected_info.width, 0.1),
+                                y: Math.max((selected_info.y - current_position.y + selected_info.height) / selected_info.height, 0.1)
+                            };
 
                             if (e.shiftKey) current_scale.x > current_scale.y ? current_scale.y = current_scale.x : current_scale.x = current_scale.y;
 
                             $query(`[id='${choosen_id}']`).style.transform = `translate(${selected_info.x + selected_info.width}px,${selected_info.y + selected_info.height}px) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x + selected_info.width}px,-${selected_info.y + selected_info.height}px)`;
                             $query(`#resize_wrap`).style.transform = `translate(${selected_info.x + selected_info.width}px,${selected_info.y + selected_info.height}px) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x + selected_info.width}px,-${selected_info.y + selected_info.height}px)`;
                         } else if (resize_angle == "resize_ne") {
-                            differentPosition.y = selected_info.y - current_position.y;
-                            differentPosition.x = current_position.x - (selected_info.x + selected_info.width);
-                            current_scale.x = Math.max((differentPosition.x + selected_info.width) / selected_info.width, 0.1);
-                            current_scale.y = Math.max((differentPosition.y + selected_info.height) / selected_info.height, 0.1);
+                            current_scale = {
+                                x: Math.max((current_position.x - (selected_info.x + selected_info.width) + selected_info.width) / selected_info.width, 0.1),
+                                y: Math.max((selected_info.y - current_position.y + selected_info.height) / selected_info.height, 0.1)
+                            };
 
                             if (e.shiftKey) current_scale.x > current_scale.y ? current_scale.y = current_scale.x : current_scale.x = current_scale.y;
 
                             $query(`[id='${choosen_id}']`).style.transform = `translate(${selected_info.x}px,${selected_info.y + selected_info.height}px) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x}px,-${selected_info.y + selected_info.height}px)`;
                             $query(`#resize_wrap`).style.transform = `translate(${selected_info.x}px,${selected_info.y + selected_info.height}px) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x}px,-${selected_info.y + selected_info.height}px)`;
                         } else if (resize_angle == "resize_sw") {
-                            differentPosition.y = current_position.y - (selected_info.y + selected_info.height);
-                            differentPosition.x = selected_info.x - current_position.x;
-                            current_scale.x = Math.max((differentPosition.x + selected_info.width) / selected_info.width, 0.1);
-                            current_scale.y = Math.max((differentPosition.y + selected_info.height) / selected_info.height, 0.1);
+                            current_scale = {
+                                x: Math.max((selected_info.x - current_position.x + selected_info.width) / selected_info.width, 0.1),
+                                y: Math.max((current_position.y - (selected_info.y + selected_info.height) + selected_info.height) / selected_info.height, 0.1)
+                            };
 
                             if (e.shiftKey) current_scale.x > current_scale.y ? current_scale.y = current_scale.x : current_scale.x = current_scale.y;
 
@@ -215,31 +220,20 @@ svgDraw.onpointermove = e => {
                             $query(`#resize_wrap`).style.transform = `translate(${selected_info.x + selected_info.width}px,${selected_info.y}px) scale(${current_scale.x},${current_scale.y}) translate(-${selected_info.x + selected_info.width}px,-${selected_info.y}px)`;
                         } else if (resize_angle == "line_x1") {
                             let newPoint = comparePoint(current_position);
-
-                            cursorPosition = { x: current_position.x.toFixed(2), y: current_position.y.toFixed(2) };
                             cursorPosition = newPoint ? { x: newPoint.x, y: newPoint.y } : { x: current_position.x.toFixed(2), y: current_position.y.toFixed(2) };
-                            $query(`[id='${choosen_id}']`).setAttribute("x1", cursorPosition.x)
+                            $query(`[id='${choosen_id}']`).setAttribute("x1", cursorPosition.x);
                             $query(`[id='${choosen_id}']`).setAttribute("y1", cursorPosition.y);
-                            con.invoke('MoveObject', 'line', {
-                                id: choosen_id,
-                                x1: $query(`[id='${choosen_id}']`).getAttribute('x1'),
-                                y1: $query(`[id='${choosen_id}']`).getAttribute('y1')
-                            });
-                            selectLine(choosen_id, { x: $query(`[id='${choosen_id}']`).getAttribute('x1'), y: $query(`[id='${choosen_id}']`).getAttribute('y1') }, true);
+                            con.invoke('MoveObject', 'line', { id: choosen_id, x1: cursorPosition.x, y1: cursorPosition.y });
+                            selectLine(choosen_id, cursorPosition);
                         } else if (resize_angle == "line_x2") {
                             let newPoint = comparePoint(current_position);
                             cursorPosition = newPoint ? { x: newPoint.x, y: newPoint.y } : { x: current_position.x.toFixed(2), y: current_position.y.toFixed(2) };
-                            $query(`[id='${choosen_id}']`).setAttribute("x2", cursorPosition.x)
+                            $query(`[id='${choosen_id}']`).setAttribute("x2", cursorPosition.x);
                             $query(`[id='${choosen_id}']`).setAttribute("y2", cursorPosition.y);
-                            con.invoke('MoveObject', 'line', {
-                                id: choosen_id,
-                                x2: $query(`[id='${choosen_id}']`).getAttribute('x2'),
-                                y2: $query(`[id='${choosen_id}']`).getAttribute('y2')
-                            });
-                            selectLine(choosen_id, { x: $query(`[id='${choosen_id}']`).getAttribute('x2'), y: $query(`[id='${choosen_id}']`).getAttribute('y2') });
+                            con.invoke('MoveObject', 'line', { id: choosen_id, x2: cursorPosition.x, y2: cursorPosition.y });
+                            selectLine(choosen_id, cursorPosition);
                         }
-                    }
-                    break;
+                    } break;
                 case "rect": // Rectangle
                     if (!id) {
                         id = uuidv4();
@@ -267,6 +261,8 @@ svgDraw.onpointermove = e => {
 
                     drawRect(id, pointR, boxR);
                     con.invoke("DrawRect", id, pointR, boxR);
+                    $query('#xcoord').innerHTML = simplifyNumber(current_position.x);
+                    $query('#ycoord').innerHTML = simplifyNumber(current_position.y);
                     break;
                 case "circle": // Circle
                     if (!id) { // check new element
@@ -295,20 +291,22 @@ svgDraw.onpointermove = e => {
 
                     drawCircle(id, pointC, boxC);
                     con.invoke("DrawCircle", id, pointC, boxC);
+                    $query('#xcoord').innerHTML = simplifyNumber(current_position.x);
+                    $query('#ycoord').innerHTML = simplifyNumber(current_position.y);
                     break;
                 case "line": // Line
                     let newPoint = comparePoint(current_position);
 
                     if (!id) {
-                        cursorPosition = newPoint ? { x: newPoint.x, y: newPoint.y } : { x: current_position.x, y: current_position.y };
+                        cursorPosition = newPoint ? newPoint : current_position;
                         id = uuidv4();
                     }
 
-                    let tempCurrent = { x: Number(current_position.x), y: Number(current_position.y) };
-                    let pointLA = null;
-                    newPoint ? pointLA = newPoint : pointLA = tempCurrent;
-                    drawLine(id, tempCurrent, pointLA, app.color, app.size);
-                    con.invoke('DrawLine', id, tempCurrent, pointLA, app.color, app.size);
+                    let pointLA = newPoint ? newPoint : current_position;
+                    drawLine(id, { x: cursorPosition.x, y: cursorPosition.y }, { x: pointLA.x, y: pointLA.y }, app.color, app.size);
+                    con.invoke('DrawLine', id, { x: cursorPosition.x, y: cursorPosition.y }, { x: pointLA.x, y: pointLA.y }, app.color, app.size);
+                    $query('#xcoord').innerHTML = simplifyNumber(current_position.x);
+                    $query('#ycoord').innerHTML = simplifyNumber(current_position.y);
                     break;
             }
         }
@@ -319,6 +317,10 @@ svgDraw.onpointerup = svgDraw.onpointerleave = e => {
     e.preventDefault();
     let current_position = cursorPoint(e);
 
+    if (grab) {
+        grab = false;
+    }
+
     switch (app.type) {
         case "pen": // Draw
             if (id) {
@@ -328,15 +330,17 @@ svgDraw.onpointerup = svgDraw.onpointerleave = e => {
                 let midPoint = mid(coordinates[1], coordinates[2]);
                 draw(id, midPoint, coordinates[2]);
                 con.invoke("Draw", id, midPoint, coordinates[2]);
+
+                undoList.push({ mode: 'new', object: $query(`[id='${id}']`).cloneNode(true) });
+                redoUndoStatus('undo', true);
             }
-            if (id != null) undoList.push({ mode: 'new', object: $query(`[id='${id}']`).cloneNode(true) });
-//--------Shawn            
+            //--------Shawn            
             id = null;
             coordinates = [];
             break;
         case "cursor": // Move
-            let object1 = null,
-                object2 = null;
+            let object1 = null, object2 = null;
+
             if (choosen_id) {
                 const change = window.getComputedStyle($query(`[id='${choosen_id}']`), null)?.transform;
                 const selected_css_value = change != 'none' ? change.match(/matrix.*\((.+)\)/)[1].split(', ').map(parseFloat) : null;
@@ -379,11 +383,9 @@ svgDraw.onpointerup = svgDraw.onpointerleave = e => {
                             $choosen_id.setAttribute('x2', Number($choosen_id.getAttribute('x2')) + position.x);
                             $choosen_id.setAttribute('y1', Number($choosen_id.getAttribute('y1')) + position.y);
                             $choosen_id.setAttribute('y2', Number($choosen_id.getAttribute('y2')) + position.y);
-                            select({ x1: $query(`[id='${choosen_id}']`).getAttribute('x1'), x2: $query(`[id='${choosen_id}']`).getAttribute('x2'), y1: $query(`[id='${choosen_id}']`).getAttribute('y1'), y2: $query(`[id='${choosen_id}']`).getAttribute('y2') }, true);
-                            popPoint(tempPoint1);
-                            popPoint(tempPoint2);
-                            con.invoke('PopPoint', tempPoint1);
-                            con.invoke('PopPoint', tempPoint2);
+                            select({ x1: $choosen_id.getAttribute('x1'), x2: $choosen_id.getAttribute('x2'), y1: $choosen_id.getAttribute('y1'), y2: $choosen_id.getAttribute('y2') }, true);
+                            popPoint(tempPoint1); popPoint(tempPoint2);
+                            con.invoke('PopPoint', tempPoint1); con.invoke('PopPoint', tempPoint2);
                             pushPoint({ x: Number($choosen_id.getAttribute("x1")), y: Number($choosen_id.getAttribute("y1")) });
                             pushPoint({ x: Number($choosen_id.getAttribute("x2")), y: Number($choosen_id.getAttribute("y2")) });
                             con.invoke('PushPoint', { x: Number($choosen_id.getAttribute("x1")), y: Number($choosen_id.getAttribute("y1")) });
@@ -391,13 +393,10 @@ svgDraw.onpointerup = svgDraw.onpointerleave = e => {
                             $query("#line_edit").removeAttribute('style');
                             con.invoke('MoveObject', 'line', {
                                 id: choosen_id,
-                                x1: $choosen_id.getAttribute('x1'),
-                                y1: $choosen_id.getAttribute('y1'),
-                                x2: $choosen_id.getAttribute('x2'),
-                                y2: $choosen_id.getAttribute('y2')
+                                x1: $choosen_id.getAttribute('x1'), y1: $choosen_id.getAttribute('y1'),
+                                x2: $choosen_id.getAttribute('x2'), y2: $choosen_id.getAttribute('y2')
                             });
                             break;
-
                     }
                 } else if (resize && selected_css_value) { // resize
                     let scale = { x: selected_css_value[0], y: selected_css_value[3] };
@@ -539,10 +538,8 @@ svgDraw.onpointerup = svgDraw.onpointerleave = e => {
                             $choosen_id.setAttribute('ry', circle.ry);
                             con.invoke('MoveObject', 'ellipse', {
                                 id: choosen_id,
-                                cx: $choosen_id.getAttribute('cx'),
-                                cy: $choosen_id.getAttribute('cy'),
-                                rx: $choosen_id.getAttribute('rx'),
-                                ry: $choosen_id.getAttribute('ry')
+                                cx: $choosen_id.getAttribute('cx'), cy: $choosen_id.getAttribute('cy'),
+                                rx: $choosen_id.getAttribute('rx'), ry: $choosen_id.getAttribute('ry')
                             });
                             break;
                     }
@@ -558,7 +555,8 @@ svgDraw.onpointerup = svgDraw.onpointerleave = e => {
                 }
                 object2 = $query(`[id='${choosen_id}']`).cloneNode(true);
                 undoList.push({ mode: 'move', object1: object1, object2: object2 });
-//---------Shawn
+                redoUndoStatus('undo', true);
+                //---------Shawn
                 $query(`[id='${choosen_id}']`).tagName == "line" ?
                     select({ x1: $query(`[id='${choosen_id}']`).getAttribute('x1'), x2: $query(`[id='${choosen_id}']`).getAttribute('x2'), y1: $query(`[id='${choosen_id}']`).getAttribute('y1'), y2: $query(`[id='${choosen_id}']`).getAttribute('y2') }, true) :
                     select($choosen_id.getBBox());
@@ -569,38 +567,40 @@ svgDraw.onpointerup = svgDraw.onpointerleave = e => {
             drag = resize = false;
             break;
         case "rect":
-            if (e.type == "pointerup" && id){ 
+            if (e.type == "pointerup" && id) {
                 undoList.push({ mode: 'new', object: $query(`[id='${id}']`).cloneNode(true) });
-//------  Shawn              
+                redoUndoStatus('undo', true);
+
+                //------  Shawn              
             }
             break;
         case "circle": // Rectangle & circle
-            if (e.type == "pointerup" && id){ 
+            if (e.type == "pointerup" && id) {
                 undoList.push({ mode: 'new', object: $query(`[id='${id}']`).cloneNode(true) });
-//------  Shawn              
+                redoUndoStatus('undo', true);
+
+                //------  Shawn              
             }
             break;
         case "line": // Line
             if (e.type == "pointerup") {
-                if (Object.entries(cursorPosition).length !== 0) {
-                    let newPoint = { x: current_position.x.toFixed(2) * 1, y: current_position.y.toFixed(2) * 1 };
-                    // Update hub point
-                    let tempCursorPosition = { x: cursorPosition.x.toFixed(2) * 1, y: cursorPosition.y.toFixed(2) * 1 };
-                    pushPoint(tempCursorPosition);
-                    pushPoint(newPoint);
-                    con.invoke("PushPoint", tempCursorPosition);
-                    con.invoke("PushPoint", newPoint);
-                }
-                if (id != null){ 
+                let newPoint = { x: current_position.x.toFixed(2) * 1, y: current_position.y.toFixed(2) * 1 };
+                // Update hub point
+                let tempCursorPosition = { x: cursorPosition.x.toFixed(2) * 1, y: cursorPosition.y.toFixed(2) * 1 };
+                pushPoint(tempCursorPosition); pushPoint(newPoint);
+                con.invoke("PushPoint", tempCursorPosition); con.invoke("PushPoint", newPoint);
+
+                if (id != null) {
                     undoList.push({ mode: 'new', object: $query(`[id='${id}']`).cloneNode(true) });
-//------ Shawn                    
+                    redoUndoStatus('undo', true);
+
+                    //------ Shawn                    
                 }
+
             }
             break;
     }
 };
-
-let svgScale = 1;
 
 // Zoom in & out
 $query("#content").onmousewheel = $query("#content").onkeydown = e => {
@@ -610,11 +610,10 @@ $query("#content").onmousewheel = $query("#content").onkeydown = e => {
         if (e.wheelDelta / 120 > 0 && svgScale < 3) svgScale += 0.05
         else if (svgScale >= 0.2) svgScale -= 0.05
 
-        $query("#draw").setAttribute("width", svgDraw.getBBox().width * svgScale);
-        $query("#draw").setAttribute("height", svgDraw.getBBox().height * svgScale);
-        $query("#grid_wrap").setAttribute("width", svgDraw.getBBox().width * svgScale);
-        $query("#grid_wrap").setAttribute("height", svgDraw.getBBox().height * svgScale);
-        $query("#bg_grid").setAttribute("style", `transform: scale(${svgScale})`);
+        $query("#draw").setAttribute("width", (svgDraw.getBBox().width * svgScale).toFixed(2));
+        $query("#draw").setAttribute("height", (svgDraw.getBBox().height * svgScale).toFixed(2));
+
+        $query('#svgScale').innerText = `${(svgScale * 100).toFixed(0)}%`;
     }
 };
 
@@ -624,6 +623,7 @@ window.onkeydown = e => {
     if (e.keyCode == 8 || e.keyCode == 46 && choosen_id) {
         if (!choosen_id) return;
         undoList.push({ mode: 'remove', object: $query(`[id='${choosen_id}']`) });
+        redoUndoStatus('undo', true);
         removeObject(choosen_id);
         con.invoke('RemoveObject', choosen_id);
         select();
@@ -641,49 +641,37 @@ window.onkeydown = e => {
 };
 
 // Grab ========================================================================================
-$query("#content").onpointerup = window.onkeyup = e => {
-    if (svgDraw.getAttribute("style")) svgDraw.removeAttribute("style");
-    grab = space = false;
-    cursorPosition = {};
-}
-
-$query("#content").onpointerdown = e => {
-    if (space) {
+window.onkeyup = e => {
+    if (e.keyCode == 32) {
         e.preventDefault();
-        cursorPosition = cursorPoint(e);
-        grab = true;
+        if (svgDraw.getAttribute("style")) svgDraw.removeAttribute("style");
+        space = false;
     }
 }
 
 window.onpointerup = e => {
     e.preventDefault();
+    grab = false;
+    if (svgDraw.getAttribute("style")) svgDraw.removeAttribute("style");
 
-    switch (app.type) {
-        case 'line':
-            cursorPosition = {};
-            newPath = id = null;
-            break;
-        case 'rect':
-            differentPosition = cursorPosition = {};
-            newPath = id = null;
-            break;
-        case 'pen':
-            id = null;
-            coordinates = [];
-            break;
-        case 'circle':
-            differentPosition = cursorPosition = {};
-            newPath = id = null;
-            break;
+    if (app.type == "pen") {
+        id = null;
+        coordinates = [];
+    }
+    else {
+        differentPosition = cursorPosition = {};
+        newPath = id = null;
     }
 };
-$query('#undo').onpointerdown = e=>{
-    if(undoList.length == 0) return;
+
+$query('#undo').onpointerdown = e => {
+    if (undoList.length == 0) return;
     select();
     undo();
 }
-$query('#redo').onpointerdown = e=>{
-    if(redoList.length == 0) return;
+
+$query('#redo').onpointerdown = e => {
+    if (redoList.length == 0) return;
     select();
     redo();
 }
@@ -755,15 +743,15 @@ $query("#save input").onclick = async () => {
     };
     img.src = url;
 }
-$query("#clear input").onclick = e=>{
+$query("#clear input").onclick = e => {
     removeAllObject();
     con.invoke('RemoveAllObject');
 }
 
-function selectLine(id, box, point1 = false) {
+function selectLine(id, box) {
     let $line = $query(`[id='${id}']`);
     if ($line && Object.entries(box) != 0) {
-        if (point1) {
+        if (resize_angle == "line_x1") {
             let point = $query("#line_x1");
             point.setAttribute('x', box.x - 5);
             point.setAttribute('y', box.y - 5);
@@ -799,6 +787,8 @@ function select(box, line = false) {
                   </g>`;
     }
     svgDraw.insertAdjacentHTML('beforeend', border);
+    $query('#xcoord').innerHTML = simplifyNumber(box.x);
+    $query('#ycoord').innerHTML = simplifyNumber(box.y);
 }
 
 // Drawing function
@@ -812,7 +802,7 @@ function insertImage(id, url, point, box) {
     newPath.setAttribute('y', point.y);
     newPath.setAttribute('width', box.x);
     newPath.setAttribute('height', box.y);
-    $query("#draw").appendChild(newPath);
+    svgDraw.appendChild(newPath);
 }
 
 function startDraw(id, point, color, size, fill) {
@@ -822,7 +812,7 @@ function startDraw(id, point, color, size, fill) {
     path.setAttribute("stroke", color);
     path.setAttribute("fill", fill);
     path.setAttribute("stroke-width", `${size}px`);
-    $query("svg#draw").appendChild(path);
+    svgDraw.appendChild(path);
 }
 
 function draw(id, pointA, pointB) {
@@ -840,7 +830,7 @@ function startRect(id, point, color, size, fill) {
     rect.setAttribute("stroke-width", size + "px");
     rect.setAttribute('x', simplifyNumber(point.x));
     rect.setAttribute('y', simplifyNumber(point.y));
-    $query("svg#draw").appendChild(rect);
+    svgDraw.appendChild(rect);
 }
 
 function drawRect(id, point, box) {
@@ -859,7 +849,7 @@ function startCircle(id, point, color, size, fill) { // ID,point,color,size,fill
     circle.setAttribute('stroke', color);
     circle.setAttribute("fill", fill);
     circle.setAttribute('stroke-width', size + "px");
-    $query("svg#draw").appendChild(circle); // add into svg
+    svgDraw.appendChild(circle); // add into svg
 }
 
 function drawCircle(id, point, box) {
@@ -871,6 +861,7 @@ function drawCircle(id, point, box) {
 }
 
 function drawLine(id, point, point2, color, size) {
+
     let path = $query(`[id='${id}']`);
     if (!path) {
         path = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -880,9 +871,11 @@ function drawLine(id, point, point2, color, size) {
         path.setAttribute('x1', simplifyNumber(point.x));
         path.setAttribute('y1', simplifyNumber(point.y));
     }
-    path.setAttribute('x2', simplifyNumber(point2.x));
-    path.setAttribute('y2', simplifyNumber(point2.y));
-    $query("svg#draw").appendChild(path);
+    path.setAttribute('x2', point2.x.toFixed(2));
+    path.setAttribute('y2', point2.y.toFixed(2));
+    // path.setAttribute('x2', simplifyNumber(point2.x));
+    // path.setAttribute('y2', simplifyNumber(point2.y));
+    svgDraw.appendChild(path);
 }
 
 let pushPoint = (point) => points.push(point);
@@ -896,11 +889,11 @@ function startText(id, x, y, color, size) { //Text function
     text.setAttribute('fill', color);
     text.setAttribute('font-size', size + "em");
     text.textContent = "Type Something";
-    $query("svg#draw").appendChild(text);
+    svgDraw.appendChild(text);
 }
 
-function removeObject(id,condition = false) { // Remove object
-    
+function removeObject(id, condition = false) { // Remove object
+
     if ($query(`[id='${id}']`).tagName == 'line') {
 
         popPoint({ x: $query(`[id='${id}']`).getAttribute('x1') * 1, y: $query(`[id='${id}']`).getAttribute('y1') * 1 });
@@ -909,18 +902,32 @@ function removeObject(id,condition = false) { // Remove object
         con.invoke('PopPoint', { x: $query(`[id='${id}']`).getAttribute('x2') * 1, y: $query(`[id='${id}']`).getAttribute('y2') * 1 });
     }
     $query(`[id='${id}']`).remove();
-    if(condition) select();
+    if (condition) select();
 }
 
 function removeAllObject() { // Error
     // Remove all points, svg, 
-    svgDraw.innerHTML = "<g><rect width='1052' height='744' fill='transparent'></rect></g>";
+    svgDraw.innerHTML = `<g>
+                            <defs>
+                                <pattern id="smallGrid" width="8" height="8" patternUnits="userSpaceOnUse">
+                                    <path d="M8,0L0,0,0,8" fill="none" stroke="#cccccc" stroke-width="0.5" />
+                                </pattern>
+                                <pattern id="grid" width="80" height="80" patternUnits="userSpaceOnUse">
+                                    <rect width="80" height="80" fill="url(#smallGrid)" />
+                                    <path d="M80,0L0,0,0,80" fill="none" stroke="#cccccc" stroke-width="1" />
+                                </pattern>
+                            </defs>
+
+                            <rect width="100%" height="100%" fill="white" class="notMoveable" />
+                            <rect id="bg_grid" width="100%" height="100%" fill="url(#grid)" class="notMoveable" />
+                        </g>`;
     select();
 }
 
-let create = (object) => $query('svg#draw').appendChild(object);
+let create = (object) => svgDraw.appendChild(object);
 
 function moveObject(tag, object) {
+    if (choosen_id == object.id) select();
     switch (tag) {
         case 'path':
             $query(`[id='${object.id}']`).setAttribute('d', object.d);
@@ -989,8 +996,8 @@ function undo() { // Everytime will push {event:,object:}
         con.invoke('Create', getString(temp.object));
     } else console.log("Unknown");
     redoList.push(temp);
-    if(undoList.length==0) redoUndoStatus('undo');
-    redoUndoStatus('redo',true);
+    if (undoList.length == 0) redoUndoStatus('undo');
+    redoUndoStatus('redo', true);
 }
 
 // Redo event trigger
@@ -1015,8 +1022,8 @@ function redo() {
         con.invoke('RemoveObject', tempId);
     } else console.log("Unknown");
     undoList.push(temp);
-    redoUndoStatus('undo',true);
-    if(redoList.length==0) redoUndoStatus('redo');
+    redoUndoStatus('undo', true);
+    if (redoList.length == 0) redoUndoStatus('redo');
 }
 
 function createObject(stringObject) {
@@ -1067,26 +1074,25 @@ function createObject(stringObject) {
     }
 }
 //---- Shawn
-function redoUndoStatus(event,con = false){    // event = undo/redo     con true mean no need to set the list to empty
-    if(event==null) return;
-    console.log("asd");
-    if(event == "undo"){
-        if(con){
+function redoUndoStatus(event, con = false) {    // event = undo/redo     con true mean no need to set the list to empty
+    if (event == null) return;
+    if (event == "undo") {
+        if (con) {
             $query('#undo').hidden = false;
 
 
-        }else{
+        } else {
             undoList = [];
             $query('#undo').hidden = true;
         }
-    }else if(event == "redo"){
-        if(con){
+    } else if (event == "redo") {
+        if (con) {
             $query('#redo').hidden = false;
-        }else{
+        } else {
             redoList = [];
             $query('#redo').hidden = true;
         }
-    }else{
+    } else {
         console.log("unknown");
     }
 }
@@ -1105,7 +1111,7 @@ var getString = (function () {
 
 function simplifyNumber(n) {
     if (isNaN(n)) return;
-    return n.toFixed(2) % 1 != 0 ? n.toFixed(2) : n.toFixed(0);
+    return Number(n).toFixed(2) % 1 != 0 ? Number(n).toFixed(2) : Number(n).toFixed(0);
 }
 
 function uuidv4() { // ID generator
@@ -1174,8 +1180,9 @@ con.on('StartCircle', startCircle);
 con.on('DrawCircle', drawCircle);
 con.on('DrawLine', drawLine);
 con.on('PushPoint', pushPoint);
-con.on('RemoveObject',(id)=> {
-    removeObject(id,true);});
+con.on('RemoveObject', (id) => {
+    removeObject(id, true);
+});
 con.on('RemoveAllObject', removeAllObject);
 con.on('MoveObject', moveObject);
 con.on('Create', createObject);
@@ -1183,6 +1190,16 @@ con.on('PopPoint', popPoint);
 con.on('InsertImage', insertImage);
 // con.on('PointerCursor',pointerCursor);
 // -----Shawn    con.on('')
+con.on('UpdateUserList', (list) => {
+    list = JSON.parse(list);
+
+    // for (let temp of list) {
+    //     console.log(temp.Id);
+    // }
+});
+con.on('UpdateUserCount', (num) => {
+    // console.log(num);
+});
 
 con.start().then(e => {
     $query('#main').hidden = false;

@@ -7,15 +7,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Drawing</title>
     <link rel="shortcut icon" href="favicon.png" type="image/png">
+    <link rel="stylesheet" href="css/list.css">
 </head>
 
-<body>
+<body hidden>
+    <header>
+        <div>
+            <img src="favicon.png" alt="logo">
+            <h1>
+                JuzDraw
+            </h1>
+        </div>
+        <h2>
+            Welcome <b id="you"></b>
+        </h2>
+    </header>
+
     <main>
-        <p><button id="create" disabled>Create Room</button></p>
+        <button id="create" disabled>Create Room</button>
 
-        <p>You are : <b id="you"></b></p>
-
-        <table>
+        <table hidden>
             <thead>
                 <tr>
                     <th>Room Names</th>
@@ -28,15 +39,15 @@
                 </tr>
             </tbody>
         </table>
+
+        <div hidden>No rooms, why not create one? :)</div>
     </main>
 
-    <!-- <script src="js/jquery.min.js"></script> -->
     <script src="js/signalr.js"></script>
     <script>
         // ========================================================================================
         // General
         // ========================================================================================
-
         const name = sessionStorage.getItem('name');
         if (!name) {
             location = 'main.html';
@@ -48,7 +59,6 @@
         // ========================================================================================
         // Events
         // ========================================================================================
-
         //Create room Id
         document.getElementById('create').onclick = async e => {
             let roomId = await con.invoke('CreateRoom');
@@ -73,25 +83,28 @@
         });
 
         con.on('UpdateList', list => {
-            let html = '';
-            //room.id should replace with room.name
-            for (let room of list) {
-                html += `
-                    <tr>
-                        <td>$${room.id}</td>   
-                        <td><button onclick="join('${room.id}')">Join</button></td>
-                    </tr>
-                `;
-            }
-
             if (list.length == 0) {
-                html = '<tr><td colspan="2">No rooms, why not create one? :)</td></tr>';
+                document.querySelector('main div').hidden = false;
+                document.querySelector('table').hidden = true;
             }
-            document.querySelector('tbody').innerHTML = html;
+            else {
+                let html = '';
+                //room.id should replace with room.name
+                for (let room of list) {
+                    html += `<tr>
+                                <td>${room.id}</td>
+                                <td><button onclick="join('${room.id}')">Join</button></td>
+                            </tr>`;
+                }
+                document.querySelector('tbody').innerHTML = html;
+                document.querySelector('table').hidden = false;
+                document.querySelector('main div').hidden = true;
+            }
         });
 
         con.start().then(e => {
             document.getElementById('create').disabled = false;
+            document.querySelector('body').hidden = false;
         });
     </script>
 </body>

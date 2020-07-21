@@ -3,18 +3,16 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
+using Newtonsoft.Json;
 
 namespace Drawing
 {
     public class User
     {
         public string Id { get; set; }
-
-        public string Color { get; set; } 
+        public string Color { get; set; }
         public string Name { get; set; }
-
-        public User(string id,string color, string name) => (Id,Color, Name) = (id,color, name);
-
+        public User(string id, string color, string name) => (Id, Color, Name) = (id, color, name);
     }
     public class DrawObject
     {
@@ -40,25 +38,19 @@ namespace Drawing
 
     public class Room
     {
-        public string Id { get; set; } = Guid.NewGuid().ToString();
+        public string Id { get; set; } = Guid.NewGuid().ToString("N");
         public string Name { get; set; } = "ROOM" + Guid.NewGuid().ToString();
-
         public static List<User> users = new List<User>();
         public static List<DrawObject> drawObjects = new List<DrawObject>();
         public int NoOfUsers { get; set; }
         public bool IsEmpty => NoOfUsers == 0;
-        public User GetUser(string id)=>users.Find(r=>r.Id == id);
+        public User GetUser(string id) => users.Find(r => r.Id == id);
         public void AddUser(User user) => users.Add(user);
-    
-        public void RemoveUser(string id)=> users.Remove(users.Find(r => r.Id == id));
-
-        public DrawObject GetDraw(string id)=>drawObjects.Find(r=>r.Id == id);
-        public void AddDraw(DrawObject o)=>drawObjects.Add(o);
-
-        public void RemoveDraw(string id)=> drawObjects.Remove(drawObjects.Find(r => r.Id == id));
-
-        
-    
+        public List<User> getUserList() => users;
+        public void RemoveUser(string id) => users.Remove(users.Find(r => r.Id == id));
+        public DrawObject GetDraw(string id) => drawObjects.Find(r => r.Id == id);
+        public void AddDraw(DrawObject o) => drawObjects.Add(o);
+        public void RemoveDraw(string id) => drawObjects.Remove(drawObjects.Find(r => r.Id == id));
     }
 
     // Hub
@@ -272,8 +264,20 @@ namespace Drawing
             }
             await Clients.OthersInGroup(roomId).SendAsync("InsertImage", id, url, point1, point2);
         }
-       
-        
+
+        public async Task UpdateUserList()
+        {
+            string roomId = Context.GetHttpContext().Request.Query["roomId"];
+            Room room = rooms.Find(r => r.Id == roomId);
+            if (room == null)
+            {
+                await Clients.Caller.SendAsync("Reject");
+            }
+
+            await Clients.Group(roomId).SendAsync("UpdateUserList", JsonConvert.SerializeObject(room.getUserList()));
+            await Clients.Group(roomId).SendAsync("UpdateUserCount",room.NoOfUsers);
+        }
+
 
         // public async Task InsertObjectIntoList(DrawObject o)
         // {
@@ -363,21 +367,19 @@ namespace Drawing
                 return;
             }
             string randomColor = Color.FromArgb(rnd.Next(256), rnd.Next(256), rnd.Next(256)).ToString();
-            // User newUser = new User(id,randomColor, name);
-            // User userInRoom = room.GetUser(id);
-            // if(userInRoom != null){
-            //     await Clients.Caller.SendAsync("Reject");
-            //     return;
-            // }
-                await Groups.AddToGroupAsync(id, roomId);
-                //here
-                // room.AddUser(newUser);
-                await Clients.Group(roomId).SendAsync("Left", $"<b>{name}</b> joined");
-                room.NoOfUsers++;
+            User newUser = new User(id, randomColor, name);
             
-            
+            await Groups.AddToGroupAsync(id, roomId);
+            //here
+            room.AddUser(newUser);
+            await Clients.Group(roomId).SendAsync("Left", $"<b>{name}</b> joined");
+            room.NoOfUsers++;
+            await UpdateUserList();
+
+
+
             //await Clients.Group(roomId).SendAsync("Ready", newUser);
-            
+
             await UpdateList();
         }
 
@@ -401,7 +403,7 @@ namespace Drawing
 
         private async Task RoomDisconnected()
         {
-            string id     = Context.ConnectionId;
+            string id = Context.ConnectionId;
             string roomId = Context.GetHttpContext().Request.Query["roomId"];
 
             Room room = rooms.Find(r => r.Id == roomId);
@@ -410,10 +412,12 @@ namespace Drawing
                 await Clients.Caller.SendAsync("Reject");
                 return;
             }
-
+            room.RemoveUser(id);
+            room.NoOfUsers--;
+            await UpdateUserList();
             string username = Context.GetHttpContext().Request.Query["name"];
             await Clients.OthersInGroup(roomId).SendAsync("Left", $"<b>{username}</b> left");
-            room.NoOfUsers--;
+            
 
             if (room.IsEmpty)
             {
@@ -422,4 +426,4 @@ namespace Drawing
             }
         }
     }
-}                      
+}
