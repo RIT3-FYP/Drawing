@@ -11,24 +11,20 @@
 </head>
 
 <body>
-    <div id="fps">FPS</div>
-
     <div id="main" hidden>
         <header>
-            <h1>
-                JuzDraw
-            </h1>
+            <h1> JuzDraw </h1>
             <button id="leave" style="cursor: pointer;">Leave</button>
         </header>
 
         <div id="status">status</div>
         <div class="selection">
             <div>
-                <label id="undo" title="undo">
+                <label class="btnUR" id="undo" title="undo">
                     <input type="button" name="type" hidden>
                     <span class="material-icons" style="cursor: pointer;">undo</span>
                 </label>
-                <label id="redo" title="redo">
+                <label class="btnUR" id="redo" title="redo">
                     <input type="button" name="type" hidden>
                     <span class="material-icons" style="cursor: pointer;">redo</span>
                 </label>
@@ -77,8 +73,10 @@
                     <option value="#999999">
                 </datalist>
             </div>
-            x: <div id="xcoord"></div>
-            y: <div id="ycoord"></div>
+            <div>
+                x: <span id="xcoord"></span>  
+                y: <span id="ycoord"></span>
+            </div>
             <div id="svgScale"></div>
         </div>
         <div id="nav">
@@ -120,8 +118,8 @@
         </div>
 
         <svg id="content" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-            <svg x="10" y="10" id="draw" viewBox="0 0 1052 744" fill="white" width="1052" height="744"
-                overflow="hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" x="10" y="10" id="draw" viewBox="0 0 1052 744" fill="white"
+                width="1052" height="744" overflow="hidden">
                 <g>
                     <defs>
                         <pattern id="smallGrid" width="8" height="8" patternUnits="userSpaceOnUse">
@@ -136,11 +134,10 @@
                     <rect width="100%" height="100%" fill="white" class="notMoveable" />
                     <rect id="bg_grid" width="100%" height="100%" fill="url(#grid)" class="notMoveable" />
                 </g>
+                <g id="cursors"></g>
             </svg>
-            <g id="cursors"></g>
         </svg>
         <div id="users"></div>
-
     </div>
 
     <script src="js/signalr.js"></script>

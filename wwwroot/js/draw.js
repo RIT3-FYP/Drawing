@@ -18,7 +18,7 @@ let svgScale = 1;
 let object1 = null;
 
 // Flag
-let drag = false, resize = false, grab = false, inSVG = false;
+let drag = false, resize = false, grab = false;
 
 let svgDraw = $query('svg#draw'); // draw svg
 
@@ -66,7 +66,6 @@ function menu(value) {
 svgDraw.onpointerdown = svgDraw.onpointerenter = e => {
     if (e.buttons == 1 && e.isPrimary) {
         e.preventDefault();
-        inSVG = true;
         let current_position = cursorPoint(e);
         if (choosen_id && (e.target.tagName == "svg" || e.target.id == "bg_grid")) select();
 
@@ -117,9 +116,10 @@ svgDraw.onpointerdown = svgDraw.onpointerenter = e => {
 };
 
 svgDraw.onpointermove = e => {
-    if (e.buttons == 1 && e.isPrimary && inSVG) {
+    let current_position = cursorPoint(e);
+    con.invoke("UpdateCursor", { x: current_position.x, y: current_position.y });
+    if (e.buttons == 1 && e.isPrimary) {
         e.preventDefault();
-        let current_position = cursorPoint(e);
 
         if (grab && space) {
             svgDraw.setAttribute("x", Number(svgDraw.getAttribute("x")) + e.movementX);
@@ -310,7 +310,6 @@ svgDraw.onpointermove = e => {
 
 svgDraw.onpointerup = svgDraw.onpointerleave = e => {
     e.preventDefault();
-    inSVG = false;
     let current_position = cursorPoint(e);
 
     if (grab) {
@@ -330,10 +329,8 @@ svgDraw.onpointerup = svgDraw.onpointerleave = e => {
                 undoList.push({ mode: 'new', object: $query(`[id='${id}']`).cloneNode(true) });
                 redoUndoStatus('undo', true);
                 con.invoke('InsertObjectIntoList', { id, object: getString($query(`[id='${id}']`)) });
-
             }
-            id = null;
-            coordinates = [];
+            id = null; coordinates = [];
             break;
         case "cursor": // Move
             let object2 = null;
@@ -412,14 +409,10 @@ svgDraw.onpointerup = svgDraw.onpointerleave = e => {
                                 let coord_xy = i.split(",").map(parseFloat);
                                 if (!initial_position) initial_position = { x: coord_xy[0], y: coord_xy[1] };
                                 else switch (resize_angle) {
-                                    case "resize_e":
-                                    case "resize_s":
-                                    case "resize_se":
+                                    case "resize_e": case "resize_s": case "resize_se":
                                         initial_position = { x: Math.min(initial_position.x, coord_xy[0], coord_xy[2]), y: Math.min(initial_position.y, coord_xy[1], coord_xy[3]) };
                                         break;
-                                    case "resize_w":
-                                    case "resize_n":
-                                    case "resize_nw":
+                                    case "resize_w": case "resize_n": case "resize_nw":
                                         initial_position = { x: Math.max(initial_position.x, coord_xy[0], coord_xy[2]), y: Math.max(initial_position.y, coord_xy[1], coord_xy[3]) };
                                         break;
                                     case "resize_ne":
@@ -458,12 +451,9 @@ svgDraw.onpointerup = svgDraw.onpointerleave = e => {
                             $choosen_id.setAttribute('height', rect_info.height * scale.y);
                             con.invoke('MoveObject', 'rect', {
                                 id: choosen_id,
-                                x: $choosen_id.getAttribute('x'),
-                                y: $choosen_id.getAttribute('y'),
-                                width: $choosen_id.getAttribute('width'),
-                                height: $choosen_id.getAttribute('height')
-                            });
-                            break;
+                                x: $choosen_id.getAttribute('x'), y: $choosen_id.getAttribute('y'),
+                                width: $choosen_id.getAttribute('width'), height: $choosen_id.getAttribute('height')
+                            }); break;
                         case 'image':
                             const image_info = $choosen_id.getBBox();
 
@@ -486,8 +476,7 @@ svgDraw.onpointerup = svgDraw.onpointerleave = e => {
                                 y: $choosen_id.getAttribute('y'),
                                 width: $choosen_id.getAttribute('width'),
                                 height: $choosen_id.getAttribute('height')
-                            });
-                            break;
+                            }); break;
                         case 'ellipse':
                             const ellipse_info = $choosen_id.getBBox();
                             let circle = { cx: ellipse_info.x + (ellipse_info.width / 2), cy: ellipse_info.y + (ellipse_info.height / 2), rx: ellipse_info.width / 2, ry: ellipse_info.height / 2 };
@@ -542,8 +531,7 @@ svgDraw.onpointerup = svgDraw.onpointerleave = e => {
                                 id: choosen_id,
                                 cx: $choosen_id.getAttribute('cx'), cy: $choosen_id.getAttribute('cy'),
                                 rx: $choosen_id.getAttribute('rx'), ry: $choosen_id.getAttribute('ry')
-                            });
-                            break;
+                            }); break;
                     }
                     object2 = $query(`[id='${choosen_id}']`).cloneNode(true);
                     undoList.push({ mode: 'move', object1: object1, object2: object2 });
@@ -578,7 +566,6 @@ svgDraw.onpointerup = svgDraw.onpointerleave = e => {
                 undoList.push({ mode: 'new', object: $query(`[id='${id}']`).cloneNode(true) });
                 redoUndoStatus('undo', true);
                 con.invoke('InsertObjectIntoList', { id, object: getString($query(`[id='${id}']`)) });
-
             }
             break;
         case "circle": // Rectangle & circle
@@ -586,7 +573,6 @@ svgDraw.onpointerup = svgDraw.onpointerleave = e => {
                 undoList.push({ mode: 'new', object: $query(`[id='${id}']`).cloneNode(true) });
                 redoUndoStatus('undo', true);
                 con.invoke('InsertObjectIntoList', { id, object: getString($query(`[id='${id}']`)) });
-
             }
             break;
         case "line": // Line
@@ -601,32 +587,26 @@ svgDraw.onpointerup = svgDraw.onpointerleave = e => {
                     undoList.push({ mode: 'new', object: $query(`[id='${id}']`).cloneNode(true) });
                     redoUndoStatus('undo', true);
                     con.invoke('InsertObjectIntoList', { id, object: getString($query(`[id='${id}']`)) });
-
                 }
-
             }
             break;
     }
 };
 
 // Zoom in & out
-$query("#content").onmousewheel = $query("#content").onkeydown = e => {
+$query("#content").onmousewheel = e => {
     if (e.ctrlKey) {
         e.preventDefault();
 
         if (e.wheelDelta / 120 > 0 && svgScale < 3) svgScale += 0.05
         else if (svgScale >= 0.2) svgScale -= 0.05
+        console.log(svgDraw.getBBox());
 
-        $query("#draw").setAttribute("width", (svgDraw.getBBox().width * svgScale).toFixed(2));
-        $query("#draw").setAttribute("height", (svgDraw.getBBox().height * svgScale).toFixed(2));
+        svgDraw.setAttribute("width", simplifyNumber(svgDraw.getBBox().width * svgScale));
+        svgDraw.setAttribute("height", simplifyNumber(svgDraw.getBBox().height * svgScale));
 
         $query('#svgScale').innerText = `${(svgScale * 100).toFixed(0)}%`;
     }
-};
-
-$query("#content").onpointermove = e => {
-    e.preventDefault();
-    con.invoke("UpdateCursor", { x: e.offsetX, y: e.offsetY });
 };
 
 let space = false;
@@ -640,11 +620,9 @@ window.onkeydown = e => {
         con.invoke('RemoveObject', choosen_id);
         select();
     } else if (e.ctrlKey && e.keyCode == '90' && !e.repeat) {
-        select();
-        undo();
+        select(); undo();
     } else if (e.ctrlKey && e.keyCode == '89' && !e.repeat) {
-        select();
-        redo();
+        select(); redo();
     } else if (e.keyCode == 32) {
         e.preventDefault();
         space = true;
@@ -678,37 +656,35 @@ window.onpointerup = e => {
 
 $query('#undo').onpointerdown = e => {
     if (undoList.length == 0) return;
-    select();
-    undo();
+    select(); undo();
 }
 
 $query('#redo').onpointerdown = e => {
     if (redoList.length == 0) return;
-    select();
-    redo();
+    select(); redo();
 }
 /* ==================================== Update by frame ====================================== */
-let rgb_H = 0;
-let secondsPassed, oldTimeStamp, fps;
+// let rgb_H = 0;
+// let secondsPassed, oldTimeStamp, fps;
 
-window.requestAnimationFrame(update); // update by frame
-function update(timeStamp) {
-    // Calculate the number of seconds passed since the last frame
-    secondsPassed = (timeStamp - oldTimeStamp) / 1000;
-    oldTimeStamp = timeStamp;
+// window.requestAnimationFrame(update); // update by frame
+// function update(timeStamp) {
+//     // Calculate the number of seconds passed since the last frame
+//     secondsPassed = (timeStamp - oldTimeStamp) / 1000;
+//     oldTimeStamp = timeStamp;
 
-    fps = Math.round(1 / secondsPassed); // Calculate fps
+//     fps = Math.round(1 / secondsPassed); // Calculate fps
 
-    if (fps > 20) { // Display fps
-        $query(`#fps`).innerHTML = fps;
-        $query(`#fps`).style.color = "green";
-    } else {
-        $query(`#fps`).innerHTML = fps;
-        $query(`#fps`).style.color = "red";
-    }
+//     if (fps > 20) { // Display fps
+//         $query(`#fps`).innerHTML = fps;
+//         $query(`#fps`).style.color = "green";
+//     } else {
+//         $query(`#fps`).innerHTML = fps;
+//         $query(`#fps`).style.color = "red";
+//     }
 
-    window.requestAnimationFrame(update);
-}
+//     window.requestAnimationFrame(update);
+// }
 
 /* ==================================== Function ====================================== */
 function $query(selector) {
@@ -720,10 +696,7 @@ function $query(selector) {
 $query('#file').onchange = async (e) => {
     let f = e.target.files[0];
     let svg = $query('svg#draw').getAttribute("viewBox").split(" ");
-    // let img_width, img_height;
     if (f && f.type.startsWith('image/')) {
-        // TODO: Use async-await syntax
-
         let url = await crop(f, svg[2], svg[3], 'dataURL', 'image/webp');
         let id = uuidv4();
         insertImage(id, url.dataURL, { x: 0, y: 0 }, { x: url.nw, y: url.nh });
@@ -759,6 +732,7 @@ $query("#save input").onclick = async () => {
     };
     img.src = url;
 }
+
 $query("#clear input").onclick = e => {
     removeAllObject();
     con.invoke('RemoveAllObject');
@@ -879,7 +853,6 @@ function drawCircle(id, point, box) {
 }
 
 function drawLine(id, point, point2, color, size) {
-
     let path = $query(`[id='${id}']`);
     if (!path) {
         path = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -909,9 +882,7 @@ function startText(id, x, y, color, size) { //Text function
 }
 
 function removeObject(id, condition = false) { // Remove object
-
     if ($query(`[id='${id}']`)?.tagName == 'line') {
-
         popPoint({ x: $query(`[id='${id}']`).getAttribute('x1') * 1, y: $query(`[id='${id}']`).getAttribute('y1') * 1 });
         popPoint({ x: $query(`[id='${id}']`).getAttribute('x2') * 1, y: $query(`[id='${id}']`).getAttribute('y2') * 1 });
         con.invoke('PopPoint', { x: $query(`[id='${id}']`).getAttribute('x1') * 1, y: $query(`[id='${id}']`).getAttribute('y1') * 1 });
@@ -977,6 +948,7 @@ function moveObject(tag, object) {
                 $query(`[id='${object.id}']`).setAttribute('width', object.width);
                 $query(`[id='${object.id}']`).setAttribute('height', object.height);
             }
+            break;
         case 'line':
             if (object.x1 && object.y1) {
                 $query(`[id='${object.id}']`).setAttribute('x1', object.x1);
@@ -1010,7 +982,7 @@ function undo() { // Everytime will push {event:,object:}
     } else if (temp.mode == 'remove') {
         create(temp.object);
         con.invoke('Create', getString(temp.object));
-    } else console.log("Unknown");
+    }
     redoList.push(temp);
     if (undoList.length == 0) redoUndoStatus('undo');
     redoUndoStatus('redo', true);
@@ -1038,7 +1010,7 @@ function redo() {
         let tempId = temp.object.getAttribute('id');
         removeObject(tempId);
         con.invoke('RemoveObject', tempId);
-    } else console.log("Unknown");
+    }
     undoList.push(temp);
     redoUndoStatus('undo', true);
     if (redoList.length == 0) redoUndoStatus('redo');
@@ -1056,8 +1028,7 @@ function createObject(stringObject) {
                 path.setAttribute("stroke", newObject.getAttribute('stroke'));
                 path.setAttribute("stroke-width", newObject.getAttribute('stroke-width'));
                 path.setAttribute("fill", newObject.getAttribute('fill'));
-                svgDraw.appendChild(path);
-                break;
+                svgDraw.appendChild(path); break;
             case 'ellipse':
                 let circle = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
                 circle.setAttribute('id', newObject.getAttribute('id'));
@@ -1068,8 +1039,7 @@ function createObject(stringObject) {
                 circle.setAttribute("fill", newObject.getAttribute('fill'));
                 circle.setAttribute('stroke', newObject.getAttribute('stroke'));
                 circle.setAttribute('stroke-width', newObject.getAttribute('stroke-width'));
-                svgDraw.appendChild(circle);
-                break;
+                svgDraw.appendChild(circle); break;
             case 'rect':
                 let rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
                 rect.setAttribute('id', newObject.getAttribute('id'));
@@ -1080,8 +1050,7 @@ function createObject(stringObject) {
                 rect.setAttribute('width', newObject.getAttribute('width'));
                 rect.setAttribute('height', newObject.getAttribute('height'));
                 rect.setAttribute("fill", newObject.getAttribute('fill'));
-                svgDraw.appendChild(rect);
-                break;
+                svgDraw.appendChild(rect); break;
             case 'image':
                 console.log(newObject);
                 let img = document.createElementNS("http://www.w3.org/2000/svg", "image");
@@ -1091,8 +1060,7 @@ function createObject(stringObject) {
                 img.setAttribute('href', newObject.getAttribute('href'));
                 img.setAttribute('width', newObject.getAttribute('width'));
                 img.setAttribute('height', newObject.getAttribute('height'));
-                svgDraw.appendChild(img);
-                break;
+                svgDraw.appendChild(img); break;
             case 'line':
                 let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
                 line.setAttribute('id', newObject.getAttribute('id'));
@@ -1103,8 +1071,7 @@ function createObject(stringObject) {
                 line.setAttribute('x2', newObject.getAttribute('x2'));
                 line.setAttribute('y2', newObject.getAttribute('y2'));
                 line.setAttribute("fill", newObject.getAttribute('fill'));
-                svgDraw.appendChild(line);
-                break;
+                svgDraw.appendChild(line); break;
         }
     });
 }
@@ -1112,20 +1079,21 @@ function redoUndoStatus(event, con = false) {    // event = undo/redo     con tr
     if (event == null) return;
     if (event == "undo") {
         if (con) {
-            $query('#undo').hidden = false;
+            $query('#undo').classList.add('btnAble');
         } else {
             undoList = [];
-            $query('#undo').hidden = true;
+            $query('#undo').classList.remove('btnAble');
+            // $query('#undo').hidden = true;
         }
     } else if (event == "redo") {
         if (con) {
-            $query('#redo').hidden = false;
+            // $query('#redo').hidden = false;
+            $query('#undo').classList.add('btnAble');
         } else {
             redoList = [];
-            $query('#redo').hidden = true;
+            // $query('#redo').hidden = true;
+            $query('#undo').classList.remove('btnAble');
         }
-    } else {
-        console.log("unknown");
     }
 }
 
@@ -1187,18 +1155,6 @@ con.onclose(err => {
     location = 'main.html?';
 });
 
-con.on('Reject', () => location = 'list.html');
-
-con.on('Left', status => {
-    let x = document.getElementById("status");
-    x.hidden = false;
-    x.innerHTML = status;
-
-    setTimeout(function () {
-        x.hidden = true;
-    }, 3000);
-});
-
 con.on('StartDraw', startDraw);
 con.on('Draw', draw);
 con.on('StartRect', startRect);
@@ -1213,49 +1169,63 @@ con.on('MoveObject', moveObject);
 con.on('Create', createObject);
 con.on('PopPoint', popPoint);
 con.on('InsertImage', insertImage);
+con.on('Reject', () => location = 'list.html');
 
-con.on("UserLeft", id => removeObject(id, true));
+// User connection ===========================================================
+con.on('UserJoin', (user) => {
+    user = JSON.parse(user);
+    document.getElementById("status").hidden = false;
+    document.getElementById("status").innerHTML = `<b>${user.Name}</b> Join`;
+
+    setTimeout(function () {
+        document.getElementById("status").hidden = true;
+    }, 3000);
+});
+con.on("UserLeft", user => {
+    user = JSON.parse(user);
+    document.getElementById("status").hidden = false;
+    document.getElementById("status").innerHTML = `<b>${user.Name}</b> Left`;
+
+    setTimeout(function () {
+        document.getElementById("status").hidden = true;
+    }, 3000);
+    removeObject(user.Id, true);
+});
+
+// Update all user cursor ====================================================
 con.on('UpdateCursor', cursor);
-function cursor(id, position) {
+function cursor(id, position, color) {
     return new Promise((resolve, reject) => {
-        let path = $query(`#cursors [id=${id}]`);
-        // let color = "#000000";
+        let path = $query(`#cursors [id='${id}']`);
         if (!path) {
-            path = document.createElementNS("http://www.w3.org/2000/svg", "image");
-            path.setAttribute("href", "cursor.svg");
-            path.setAttribute('id', id);
+            $query('#cursors').insertAdjacentHTML('beforeend', `
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" id="${id}" x="${position.x}" y="${position.y}">
+                 <path class="notMovable" fill="${color}" d="M4 0l16 12.279-6.951 1.17 4.325 8.817-3.596 1.734-4.35-8.879-5.428 4.702z" />
+            </svg>
+            `);
         }
-        // `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" x="${position.x}" y="${position.y}">
-        //     <path fill="${color}" d="M4 0l16 12.279-6.951 1.17 4.325 8.817-3.596 1.734-4.35-8.879-5.428 4.702z" />
-        // </svg>`
-        // users.forEach(u => {
-        //     if (u.id == id) color = u.color;
-        // });
-        path.setAttribute('x', position.x);
-        path.setAttribute('y', position.y);
-        $query('#cursors').appendChild(path);
+        else {
+            path.setAttribute("x", position.x);
+            path.setAttribute("y", position.y);
+            path.querySelector('path').setAttribute("fill", color);
+        }
+        svgDraw.appendChild($query("#cursors"));
     });
 }
 
 con.on('UpdateUserList', (user_list) => {
-    user_list = JSON.parse(user_list);
-    users = user_list;
-    let top = 0;
-
+    user_list = JSON.parse(user_list)
+    let top = 0, stringHTML = "";
     for (let user of user_list) {
-        console.log(user.Color);
-        $query('#users').innerHTML =
-            `
-            <div class="userlist" style="top:${top + 40}px, background: ${user.Color}" >${user.name}</div>
-        `
-        //console.log(user);
-        cursor(user.Id, { x: 0, y: 0 });
+        stringHTML += `
+            <div class="userlist" title="${user.Name}" style="top:${top}px; background-color: ${user.Color}" >${user.Name.toString().charAt(0).toUpperCase()}</div>
+        `;
+        top += 50;
     }
+    $query('#users').innerHTML = stringHTML;
 });
-con.on('UpdateUserCount', (num) => {
-    // console.log(num);
-});
-con.on('Refresh', (m) => {
+
+con.on('Restore', (m) => {
     m = JSON.parse(m);
     for (let temp of m) {
         createObject(temp.Object);

@@ -4,12 +4,16 @@
 
 html {
     scroll-behavior: smooth;
+    background-image: url("../bg.PNG");
+    background-position: top center;
+    background-repeat: no-repeat;
 }
 
 body {
     height: 100vh;
     margin: 0;
     flex-direction: column;
+    background-image: linear-gradient(to top, #00D7FF 10%, rgba(255, 255, 255, 0.5));
 }
 
 header, body, form {
@@ -21,6 +25,7 @@ header, body, form {
 header h1 {
     font-family: "Lucida Console", Courier, monospace;
     font-size: 60px;
+    text-shadow: 0 0 10px white;
 }
 
 header img {
@@ -37,6 +42,7 @@ label p {
     margin: 0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     font-weight: bold;
+    text-shadow: 0 0 10px white;
 }
 
 form {
@@ -61,4 +67,10 @@ form button {
     border-radius: 10px;
     padding: 10px 15px;
     margin: 10px;
+    background-color: white;
+}
+
+footer {
+    margin-top: 50px;
+    
 }
