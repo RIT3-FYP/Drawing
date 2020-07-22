@@ -1,6 +1,7 @@
 "use strict"
 // ================ Global variables =================
 let users;
+let drawingName = "";
 let id = null, choosen_id = null;
 let undoList = []; // Push the id with action
 let redoList = []; // After undo, push the undoList to the redoList
@@ -67,6 +68,7 @@ svgDraw.onpointerdown = svgDraw.onpointerenter = e => {
     if (e.buttons == 1 && e.isPrimary) {
         e.preventDefault();
         let current_position = cursorPoint(e);
+        
         if (choosen_id && (e.target.tagName == "svg" || e.target.id == "bg_grid")) select();
 
         $query('#xcoord').innerHTML = simplifyNumber(current_position.x);
@@ -99,7 +101,6 @@ svgDraw.onpointerdown = svgDraw.onpointerenter = e => {
                             tempPoint1 = { x: $query(`[id='${choosen_id}']`).getAttribute('x1') * 1, y: $query(`[id='${choosen_id}']`).getAttribute('y1') * 1 };
                             tempPoint2 = { x: $query(`[id='${choosen_id}']`).getAttribute('x2') * 1, y: $query(`[id='${choosen_id}']`).getAttribute('y2') * 1 };
                             select({ x1: $query(`[id='${choosen_id}']`).getAttribute('x1'), x2: $query(`[id='${choosen_id}']`).getAttribute('x2'), y1: $query(`[id='${choosen_id}']`).getAttribute('y1'), y2: $query(`[id='${choosen_id}']`).getAttribute('y2') }, true);
-
                         } else select($query(`[id='${choosen_id}']`).getBBox());
                         cursorPosition = current_position;
                         resize = false; drag = true;
@@ -117,6 +118,7 @@ svgDraw.onpointerdown = svgDraw.onpointerenter = e => {
 
 svgDraw.onpointermove = e => {
     let current_position = cursorPoint(e);
+    
     con.invoke("UpdateCursor", { x: current_position.x, y: current_position.y });
     if (e.buttons == 1 && e.isPrimary) {
         e.preventDefault();
@@ -124,7 +126,6 @@ svgDraw.onpointermove = e => {
         if (grab && space) {
             svgDraw.setAttribute("x", Number(svgDraw.getAttribute("x")) + e.movementX);
             svgDraw.setAttribute("y", Number(svgDraw.getAttribute("y")) + e.movementY);
-
         } else {
             redoUndoStatus("redo");
             switch (app.type) {
@@ -311,7 +312,7 @@ svgDraw.onpointermove = e => {
 svgDraw.onpointerup = svgDraw.onpointerleave = e => {
     e.preventDefault();
     let current_position = cursorPoint(e);
-
+    
     if (grab) {
         grab = false;
     }
@@ -323,6 +324,7 @@ svgDraw.onpointerup = svgDraw.onpointerleave = e => {
                 coordinates = coordinates.slice(-3);
 
                 let midPoint = mid(coordinates[1], coordinates[2]);
+               
                 draw(id, midPoint, coordinates[2]);
                 con.invoke("Draw", id, midPoint, coordinates[2]);
 
@@ -600,10 +602,11 @@ $query("#content").onmousewheel = e => {
 
         if (e.wheelDelta / 120 > 0 && svgScale < 3) svgScale += 0.05
         else if (svgScale >= 0.2) svgScale -= 0.05
-        console.log(svgDraw.getBBox());
 
-        svgDraw.setAttribute("width", simplifyNumber(svgDraw.getBBox().width * svgScale));
-        svgDraw.setAttribute("height", simplifyNumber(svgDraw.getBBox().height * svgScale));
+        svgDraw.setAttribute("width", simplifyNumber(1052 * svgScale));
+        svgDraw.setAttribute("height", simplifyNumber(744 * svgScale));
+        // svgDraw.setAttribute("transform", `scale(${svgScale})`);
+        
 
         $query('#svgScale').innerText = `${(svgScale * 100).toFixed(0)}%`;
     }
@@ -907,7 +910,8 @@ function removeAllObject() { // Error
 
                             <rect width="100%" height="100%" fill="white" class="notMoveable" />
                             <rect id="bg_grid" width="100%" height="100%" fill="url(#grid)" class="notMoveable" />
-                        </g>`;
+                        </g>
+                        <g id="cursors"></g>`;
     select();
 }
 
@@ -1078,21 +1082,27 @@ function createObject(stringObject) {
 function redoUndoStatus(event, con = false) {    // event = undo/redo     con true mean no need to set the list to empty
     if (event == null) return;
     if (event == "undo") {
+        $query('#undo').classList.remove('btnAble');
+        $query('#undo').classList.remove('btnDisable');
         if (con) {
+            // $query('#undo').hidden = false;
             $query('#undo').classList.add('btnAble');
         } else {
             undoList = [];
-            $query('#undo').classList.remove('btnAble');
             // $query('#undo').hidden = true;
         }
     } else if (event == "redo") {
+        $query('#redo').classList.remove('btnAble');
+        $query('#redo').classList.remove('btnDisable');
+
         if (con) {
             // $query('#redo').hidden = false;
-            $query('#undo').classList.add('btnAble');
+            $query('#redo').classList.add('btnAble');
+
         } else {
             redoList = [];
             // $query('#redo').hidden = true;
-            $query('#undo').classList.remove('btnAble');
+            
         }
     }
 }
@@ -1132,7 +1142,11 @@ let pt = svgDraw.createSVGPoint(); // Create an SVGPoint for future math
 function cursorPoint(evt) { // Get point in global SVG space
     pt.x = evt.clientX;
     pt.y = evt.clientY;
-    return pt.matrixTransform(svgDraw.getScreenCTM().inverse());
+    let points = pt.matrixTransform(svgDraw.getScreenCTM().inverse());
+    return {
+        x: points.x < 0 ? 0 : (points.x > 1052 ? 1052 : points.x),
+        y: points.y < 0 ? 0 : (points.y > 744 ? 744 : points.y)
+    }
 }
 
 /* ==================================== Hub Configuration ====================================== */
@@ -1169,6 +1183,11 @@ con.on('MoveObject', moveObject);
 con.on('Create', createObject);
 con.on('PopPoint', popPoint);
 con.on('InsertImage', insertImage);
+con.on('RequestName',()=>{
+    let drawName = prompt("Enter room name", "Untitled") ?? "Untitled";
+    con.invoke('AssignName',drawName);
+    $query('#drawName').innerText = drawName;
+});
 con.on('Reject', () => location = 'list.html');
 
 // User connection ===========================================================
@@ -1216,26 +1235,34 @@ function cursor(id, position, color) {
 con.on('UpdateUserList', (user_list) => {
     user_list = JSON.parse(user_list)
     let top = 0, stringHTML = "";
+    let count = 0;
     for (let user of user_list) {
         stringHTML += `
             <div class="userlist" title="${user.Name}" style="top:${top}px; background-color: ${user.Color}" >${user.Name.toString().charAt(0).toUpperCase()}</div>
         `;
         top += 50;
+        count++;
     }
     $query('#users').innerHTML = stringHTML;
+    $query('#userNo').innerHTML = count;
 });
 
-con.on('Restore', (m) => {
-    m = JSON.parse(m);
-    for (let temp of m) {
+con.on('Restore', (drawName,drawObject,points) => {
+    // $query('#drawName').innerHTML= drawName;
+    drawingName = drawName
+    drawObject = JSON.parse(drawObject);
+    for (let temp of drawObject)
         createObject(temp.Object);
-    }
+    
+        points = JSON.parse(points);
+    for(let temp of points)
+        points.push({x:temp.X,y:temp.Y});
 });
 
 con.start().then(e => {
     menu('pen');
     $query('#main').hidden = false;
-
+    $query('#drawName').innerText = drawingName;
     // initial svg draw position
     svgDraw.setAttribute("x", ($query('svg#content').getBoundingClientRect().width - svgDraw.getBBox().width) / 2);
 });

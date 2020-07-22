@@ -184,7 +184,8 @@ svg#draw>line {
 }
 
 .selection>div {
-    margin: 5px 10px; 
+    margin: 5px 10px;
+    user-select: none;
 }
 
 /* Notification */
@@ -212,6 +213,15 @@ svg#draw>line {
     font-size: 16px;
 }
 
+#coordinate {
+    width: 150px;
+}
+
+#coordinate span {
+    width: 50px;
+    display: inline-block;
+}
+
 #undo span {
     transform: rotate(35deg);
 }
@@ -223,18 +233,21 @@ svg#draw>line {
 .btnUR{
     display: inline-block;
     padding: 3px 5px;
-    background-color: gray;
     color: white;
+    background-color: rgba(153, 153, 153, 0.822);
     border-radius: 5px;    
-    cursor: auto;
+    
 }
 
-.btnUR:hover {
-    background-color: #999;
+.btnDisable {
+    background-color: rgba(153, 153, 153, 0.822);
+    cursor: auto;
+}.btnAble{
+    background-color: gray;
 }
 
 .btnAble:hover{
-    background-color: darkseagreen;
+    background-color: darkslategrey;
     cursor: pointer;
 }
 
@@ -280,6 +293,10 @@ svg#draw>line {
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+#xcoord {
+    margin-right: 10px;
 }
 
 #preview {

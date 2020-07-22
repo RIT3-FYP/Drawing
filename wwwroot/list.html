@@ -30,6 +30,7 @@
             <thead>
                 <tr>
                     <th>Room Names</th>
+                    <th>Online Users</th>
                     <th>Join Room</th>
                 </tr>
             </thead>
@@ -83,6 +84,7 @@
         });
 
         con.on('UpdateList', list => {
+            console.log(list);
             if (list.length == 0) {
                 document.querySelector('main div').hidden = false;
                 document.querySelector('table').hidden = true;
@@ -92,7 +94,8 @@
                 //room.id should replace with room.name
                 for (let room of list) {
                     html += `<tr>
-                                <td>${room.id}</td>
+                                <td>${room.name}</td>
+                                <td>${room.noUser}</td>
                                 <td><button onclick="join('${room.id}')">Join</button></td>
                             </tr>`;
                 }

@@ -34,18 +34,24 @@ namespace Drawing
     public class Room
     {
         public string Id { get; set; } = Guid.NewGuid().ToString("N");
-        public string Name { get; set; } = "ROOM" + Guid.NewGuid().ToString();
+        public string Name { get; set; }
         private List<User> users { get; set; }
+
         private List<DrawObject> drawObjects { get; set; }
         private List<Point> points { get; set; }
         public bool IsEmpty => users.Count == 0;
+        public int NoUser=>users.Count;
         public User GetUser(string id) => users.Find(r => r.Id == id);
         public List<User> getUserList() => users;
         public void AddUser(User user) => users.Add(user);
         public void RemoveUser(string id) => users.Remove(users.Find(r => r.Id == id));
 
+        public List<Point> getPoints() => points;
+        public void AddPoint(Point p) => points.Add(p);
+        public void RemovePoint(Point p) => points.Remove(points.Find(point => point.X == p.X && point.Y == p.Y));
         public DrawObject GetDraw(string id) => drawObjects.Find(r => r.Id == id);
         public List<DrawObject> getDrawList() => drawObjects;
+
 
         public void AddDraw(DrawObject o) => drawObjects.Add(o);
         public void RemoveDraw(string id) => drawObjects.Remove(drawObjects.Find(r => r.Id == id));
@@ -71,6 +77,16 @@ namespace Drawing
             var room = new Room();
             rooms.Add(room);
             return room.Id;
+        }
+        public async Task AssignName(string name){
+             string roomId = Context.GetHttpContext().Request.Query["roomId"];
+            Room room = rooms.Find(r => r.Id == roomId);
+            if (room == null)
+            {
+                await Clients.Caller.SendAsync("Reject");
+            }
+            room.Name = name;
+            await UpdateList();
         }
 
         /************************************************************************
@@ -163,6 +179,7 @@ namespace Drawing
             {
                 await Clients.Caller.SendAsync("Reject");
             }
+            room.AddPoint(point);
             await Clients.OthersInGroup(roomId).SendAsync("PushPoint", point);
         }
         public async Task PopPoint(Point point)
@@ -173,6 +190,7 @@ namespace Drawing
             {
                 await Clients.Caller.SendAsync("Reject");
             }
+            room.RemovePoint(point);
             await Clients.OthersInGroup(roomId).SendAsync("PopPoint", point);
         }
 
@@ -196,6 +214,7 @@ namespace Drawing
                 await Clients.Caller.SendAsync("Reject");
             }
             room.getDrawList().Clear();
+            room.getPoints().Clear();
             await Clients.OthersInGroup(roomId).SendAsync("RemoveAllObject");
         }
         public async Task Create(string obj)
@@ -327,9 +346,10 @@ namespace Drawing
                 await Clients.Caller.SendAsync("Reject");
                 return;
             }
+            if(room.Name == null)
+                await Clients.Caller.SendAsync("RequestName");
 
-            if (room.getDrawList().Count != 0)
-                await Clients.Caller.SendAsync("Restore", JsonConvert.SerializeObject(room.getDrawList()));
+            await Clients.Caller.SendAsync("Restore",room.Name, JsonConvert.SerializeObject(room.getDrawList()), JsonConvert.SerializeObject(room.getPoints()));
 
             string randomColor = String.Format("#{0:X6}", rnd.Next(0x1000000));
             room.AddUser(new User(id, randomColor, name));
