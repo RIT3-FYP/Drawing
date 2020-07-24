@@ -34,13 +34,13 @@ namespace Drawing
     public class Room
     {
         public string Id { get; set; } = Guid.NewGuid().ToString("N");
-        public string Name { get; set; }
+        public string Name { get; set; } = "Untitled";
         private List<User> users { get; set; }
 
         private List<DrawObject> drawObjects { get; set; }
         private List<Point> points { get; set; }
         public bool IsEmpty => users.Count == 0;
-        public int NoUser=>users.Count;
+        public int NoUser => users.Count;
         public User GetUser(string id) => users.Find(r => r.Id == id);
         public List<User> getUserList() => users;
         public void AddUser(User user) => users.Add(user);
@@ -78,14 +78,16 @@ namespace Drawing
             rooms.Add(room);
             return room.Id;
         }
-        public async Task AssignName(string name){
-             string roomId = Context.GetHttpContext().Request.Query["roomId"];
+        public async Task AssignName(string name)
+        {
+            string roomId = Context.GetHttpContext().Request.Query["roomId"];
             Room room = rooms.Find(r => r.Id == roomId);
             if (room == null)
             {
                 await Clients.Caller.SendAsync("Reject");
             }
             room.Name = name;
+            await Clients.OthersInGroup(roomId).SendAsync("UpdateName", name);
             await UpdateList();
         }
 
@@ -315,6 +317,9 @@ namespace Drawing
         private async Task UpdateList(string id = null)
         {
             var list = rooms;
+            var emptyRoom = rooms.Find(r => r.IsEmpty == true);
+            if (emptyRoom != null)
+                rooms.Remove(emptyRoom);
 
             if (id == null) await Clients.All.SendAsync("UpdateList", list);
             else await Clients.Client(id).SendAsync("UpdateList", list);
@@ -346,14 +351,13 @@ namespace Drawing
                 await Clients.Caller.SendAsync("Reject");
                 return;
             }
-            if(room.Name == null)
-                await Clients.Caller.SendAsync("RequestName");
+            // if (room.Name == null)
+            //     await Clients.Caller.SendAsync("RequestName");
 
-            await Clients.Caller.SendAsync("Restore",room.Name, JsonConvert.SerializeObject(room.getDrawList()), JsonConvert.SerializeObject(room.getPoints()));
+            await Clients.Caller.SendAsync("Restore", room.Name,JsonConvert.SerializeObject(room.getDrawList()), JsonConvert.SerializeObject(room.getPoints()));
 
             string randomColor = String.Format("#{0:X6}", rnd.Next(0x1000000));
             room.AddUser(new User(id, randomColor, name));
-
             await Groups.AddToGroupAsync(id, roomId);
             await Clients.Group(roomId).SendAsync("UserJoin", JsonConvert.SerializeObject(room.GetUser(id)));
             await UpdateUserList();

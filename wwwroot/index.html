@@ -14,12 +14,12 @@
     <div id="main" hidden>
         <header>
             <h1> JuzDraw </h1>
+            <div><input type="text" id="drawName" value="Untitled" onkeypress="this.style.width = ((this.value.length + 1) * 20) + 'px';"></div>
             <button id="leave" style="cursor: pointer;">Leave</button>
         </header>
 
         <div id="status">status</div>
         <div class="selection">
-            <div><b id="drawName">Untitled</b></div>
             <div>
                 <label class="btnUR btnDisable" id="undo" title="undo">
                     <input type="button" name="type" hidden>

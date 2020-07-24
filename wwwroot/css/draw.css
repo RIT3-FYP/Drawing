@@ -24,6 +24,22 @@ header h1 {
     background: url(../favicon.png) no-repeat left center / 32px 32px;
 }
 
+#drawName{
+    border: none;
+    background: #7D7D7D;
+    color:white;
+    font-size: 20pt;
+    text-align: center;
+    font-weight: bold;
+    display: flex;
+    max-width: 600px;
+}
+#drawName:focus{
+    outline: none;
+    padding:none;
+    border:2px solid whitesmoke;
+}
+
 #main,
 #content {
     height: 100%;

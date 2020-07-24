@@ -54,6 +54,13 @@ $query('#fill').oninput = e => {
     $query('#preview').style.background = `${app.fill}`;
 };
 
+$query('#drawName').onblur = e => {
+    var tempName = $query('#drawName').value;
+    if (tempName == null || !tempName) tempName = "Untitled";
+    $query('#drawName').value = tempName;
+    con.invoke('AssignName', tempName);
+};
+
 $query("[id='leave']").onclick = () => location = 'list.html';
 
 function menu(value) {
@@ -67,8 +74,9 @@ function menu(value) {
 svgDraw.onpointerdown = svgDraw.onpointerenter = e => {
     if (e.buttons == 1 && e.isPrimary) {
         e.preventDefault();
+        $query('#drawName').blur();
         let current_position = cursorPoint(e);
-        
+
         if (choosen_id && (e.target.tagName == "svg" || e.target.id == "bg_grid")) select();
 
         $query('#xcoord').innerHTML = simplifyNumber(current_position.x);
@@ -118,7 +126,7 @@ svgDraw.onpointerdown = svgDraw.onpointerenter = e => {
 
 svgDraw.onpointermove = e => {
     let current_position = cursorPoint(e);
-    
+
     con.invoke("UpdateCursor", { x: current_position.x, y: current_position.y });
     if (e.buttons == 1 && e.isPrimary) {
         e.preventDefault();
@@ -312,7 +320,7 @@ svgDraw.onpointermove = e => {
 svgDraw.onpointerup = svgDraw.onpointerleave = e => {
     e.preventDefault();
     let current_position = cursorPoint(e);
-    
+
     if (grab) {
         grab = false;
     }
@@ -324,7 +332,7 @@ svgDraw.onpointerup = svgDraw.onpointerleave = e => {
                 coordinates = coordinates.slice(-3);
 
                 let midPoint = mid(coordinates[1], coordinates[2]);
-               
+
                 draw(id, midPoint, coordinates[2]);
                 con.invoke("Draw", id, midPoint, coordinates[2]);
 
@@ -606,7 +614,7 @@ $query("#content").onmousewheel = e => {
         svgDraw.setAttribute("width", simplifyNumber(1052 * svgScale));
         svgDraw.setAttribute("height", simplifyNumber(744 * svgScale));
         // svgDraw.setAttribute("transform", `scale(${svgScale})`);
-        
+
 
         $query('#svgScale').innerText = `${(svgScale * 100).toFixed(0)}%`;
     }
@@ -630,7 +638,8 @@ window.onkeydown = e => {
         e.preventDefault();
         space = true;
         svgDraw.setAttribute("style", "cursor: grab");
-    }
+    }else if(e.keyCode == 13 )
+        $query('#drawName').blur();
 };
 
 // Grab ========================================================================================
@@ -641,6 +650,7 @@ window.onkeyup = e => {
         space = false;
     }
 }
+
 
 window.onpointerup = e => {
     e.preventDefault();
@@ -793,6 +803,7 @@ function insertImage(id, url, point, box) {
     newPath.setAttribute('href', url);
     newPath.setAttribute('x', point.x);
     newPath.setAttribute('y', point.y);
+    newPath.setAttribute('preserveAspectRatio', 'none');
     newPath.setAttribute('width', box.x);
     newPath.setAttribute('height', box.y);
     svgDraw.appendChild(newPath);
@@ -1062,6 +1073,7 @@ function createObject(stringObject) {
                 img.setAttribute('x', newObject.getAttribute('x'));
                 img.setAttribute('y', newObject.getAttribute('y'));
                 img.setAttribute('href', newObject.getAttribute('href'));
+                img.setAttribute('preserveAspectRatio', 'none');
                 img.setAttribute('width', newObject.getAttribute('width'));
                 img.setAttribute('height', newObject.getAttribute('height'));
                 svgDraw.appendChild(img); break;
@@ -1102,7 +1114,7 @@ function redoUndoStatus(event, con = false) {    // event = undo/redo     con tr
         } else {
             redoList = [];
             // $query('#redo').hidden = true;
-            
+
         }
     }
 }
@@ -1183,11 +1195,10 @@ con.on('MoveObject', moveObject);
 con.on('Create', createObject);
 con.on('PopPoint', popPoint);
 con.on('InsertImage', insertImage);
-con.on('RequestName',()=>{
-    let drawName = prompt("Enter room name", "Untitled") ?? "Untitled";
-    con.invoke('AssignName',drawName);
-    $query('#drawName').innerText = drawName;
-});
+con.on('UpdateName', (roomName) => $query("#drawName").value = roomName);
+// con.on('RequestName', () => {
+//     $query('#drawName').focus();
+// });
 con.on('Reject', () => location = 'list.html');
 
 // User connection ===========================================================
@@ -1247,22 +1258,23 @@ con.on('UpdateUserList', (user_list) => {
     $query('#userNo').innerHTML = count;
 });
 
-con.on('Restore', (drawName,drawObject,points) => {
+con.on('Restore', (drawName,drawObject, points)  => {
     // $query('#drawName').innerHTML= drawName;
-    drawingName = drawName
+
+    $query('#drawName').value = drawName;
     drawObject = JSON.parse(drawObject);
     for (let temp of drawObject)
         createObject(temp.Object);
-    
-        points = JSON.parse(points);
-    for(let temp of points)
-        points.push({x:temp.X,y:temp.Y});
+
+    points = JSON.parse(points);
+    for (let temp of points)
+        points.push({ x: temp.X, y: temp.Y });
 });
 
 con.start().then(e => {
     menu('pen');
     $query('#main').hidden = false;
-    $query('#drawName').innerText = drawingName;
+
     // initial svg draw position
     svgDraw.setAttribute("x", ($query('svg#content').getBoundingClientRect().width - svgDraw.getBBox().width) / 2);
 });
