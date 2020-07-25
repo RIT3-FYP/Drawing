@@ -207,7 +207,7 @@ namespace Drawing
             room.RemoveDraw(id);
             await Clients.OthersInGroup(roomId).SendAsync("RemoveObject", id);
         }
-        public async Task RemoveAllObject()
+        public async Task Reset()
         {
             string roomId = Context.GetHttpContext().Request.Query["roomId"];
             Room room = rooms.Find(r => r.Id == roomId);
@@ -217,7 +217,7 @@ namespace Drawing
             }
             room.getDrawList().Clear();
             room.getPoints().Clear();
-            await Clients.OthersInGroup(roomId).SendAsync("RemoveAllObject");
+            await Clients.OthersInGroup(roomId).SendAsync("Reset");
         }
         public async Task Create(string obj)
         {
@@ -267,27 +267,19 @@ namespace Drawing
         }
 
         // Insert object into object list
-        public async Task InsertObjectIntoList(DrawObject o)
+        public void InsertObjectIntoList(DrawObject o)
         {
             string roomId = Context.GetHttpContext().Request.Query["roomId"];
 
             Room room = rooms.Find(r => r.Id == roomId);
-            if (room == null)
-            {
-                await Clients.Caller.SendAsync("Reject");
-            }
             room.AddDraw(o);
         }
         // Update object list
-        public async Task UpdateObjectInList(DrawObject o)
+        public void UpdateObjectInList(DrawObject o)
         {
             string roomId = Context.GetHttpContext().Request.Query["roomId"];
 
             Room room = rooms.Find(r => r.Id == roomId);
-            if (room == null)
-            {
-                await Clients.Caller.SendAsync("Reject");
-            }
             if (room.GetDraw(o.Id) != null)
             {
                 room.RemoveDraw(o.Id);
@@ -351,8 +343,6 @@ namespace Drawing
                 await Clients.Caller.SendAsync("Reject");
                 return;
             }
-            // if (room.Name == null)
-            //     await Clients.Caller.SendAsync("RequestName");
 
             await Clients.Caller.SendAsync("Restore", room.Name,JsonConvert.SerializeObject(room.getDrawList()), JsonConvert.SerializeObject(room.getPoints()));
 
