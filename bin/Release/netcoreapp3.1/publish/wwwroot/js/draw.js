@@ -1138,7 +1138,7 @@ con.onclose(err => {
 
 // Receive the server-side function
 con.on('StartDraw', startDraw);
-con.on('Draw', draw);
+con.on('Draw', async(id, pointA, pointB) => await draw(id, pointA, pointB));
 con.on('StartRect', startRect);
 con.on('DrawRect', drawRect);
 con.on('StartCircle', startCircle);
@@ -1162,6 +1162,7 @@ con.on('UserJoin', (user) => {
         document.getElementById("status").hidden = true;
     }, 3000);
 });
+
 con.on("UserLeft", user => {
     user = JSON.parse(user);
     document.getElementById("status").hidden = false;
