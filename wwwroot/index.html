@@ -16,11 +16,14 @@
             <h1>JuzDraw</h1>
             <div id="drawNameDiv"><input type="text" id="drawName" value="Untitled"
                     onkeydown="this.style.width = ((this.value.length + 1) * 15) + 'px';"></div>
-            
+
             <div>
                 <span class="material-icons">people</span>
                 <b id="userNo"></b>
                 <button id="leave" style="cursor: pointer;">Leave</button>
+                <div id="clear" title="Clear all">
+                    <span class="material-icons">delete_forever</span>
+                </div>
             </div>
         </header>
 
@@ -38,7 +41,7 @@
             </div>
             <div>
                 <label>Stroke:</label>
-                <input type="range" id="size" min="1" max="30" step="1" value="5" list="ticks" class="slider">
+                <input type="range" id="size" min="1" max="100" step="1" value="5" list="ticks" class="slider">
                 <datalist id="ticks">
                     <option value="5">
                     <option value="10">
@@ -112,13 +115,13 @@
                     <input type="radio" name="type" value="line" onclick="menu(this.value)">
                     <span class="material-icons">horizontal_rule</span>
                 </label>
-                <label id="clear" title="clear all">
+                <label id="remove" title="remove">
                     <input type="button" name="type" hidden>
                     <span class="material-icons">delete</span>
                 </label>
                 <label id="upload" title="upload">
                     <input id="file" type="file" name="file" hidden>
-                    <span class="material-icons">cloud_upload</span>
+                    <span class="material-icons">add_photo_alternate</span>
                 </label>
                 <label id="save" title="save">
                     <input type="button" name="type" hidden>
@@ -128,15 +131,15 @@
         </div>
 
         <svg id="content" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-            <svg xmlns="http://www.w3.org/2000/svg" x="10" y="10" id="draw" viewBox="0 0 1052 744">
+            <svg xmlns="http://www.w3.org/2000/svg" x="10" y="10" id="draw" viewBox="0 0 3508 2480">
                 <g>
                     <defs>
-                        <pattern id="smallGrid" width="8" height="8" patternUnits="userSpaceOnUse">
-                            <path d="M8,0L0,0,0,8" fill="none" stroke="#cccccc" stroke-width="0.5" />
+                        <pattern id="smallGrid" width="24" height="24" patternUnits="userSpaceOnUse">
+                            <path d="M24,0L0,0,0,24" fill="none" stroke="#cccccc" stroke-width="1" />
                         </pattern>
-                        <pattern id="grid" width="80" height="80" patternUnits="userSpaceOnUse">
-                            <rect width="80" height="80" fill="url(#smallGrid)" />
-                            <path d="M80,0L0,0,0,80" fill="none" stroke="#cccccc" stroke-width="1" />
+                        <pattern id="grid" width="240" height="240" patternUnits="userSpaceOnUse">
+                            <rect width="240" height="240" fill="url(#smallGrid)" />
+                            <path d="M240,0L0,0,0,240" fill="none" stroke="#cccccc" stroke-width="2" />
                         </pattern>
                     </defs>
 

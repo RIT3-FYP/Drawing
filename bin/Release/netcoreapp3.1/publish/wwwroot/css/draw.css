@@ -108,6 +108,18 @@ header > div:nth-child(3) {
     color: white;
 }
 
+#clear{
+    display:block;
+   padding:5px;
+    margin:5px;
+    border-radius: 10px;
+    background-color: red;
+    cursor:pointer; 
+}
+#clear:hover{
+    background-color: lightcoral;
+}
+
 path.choosen {
     cursor: move;
 }
@@ -173,7 +185,7 @@ svg {
 }
 
 svg#draw #resize_wrap * {
-    vector-effect: non-scaling-stroke;
+    vector-effect: non-scaling-size;
 }
 
 svg#draw #resize_wrap rect:not(#resize_border) {
@@ -184,7 +196,7 @@ svg#draw #resize_wrap rect:not(#resize_border) {
 svg#draw>path {
     stroke-linecap: round;
     stroke-linejoin: round;
-    vector-effect: non-scaling-stroke;
+    vector-effect: non-scaling-size;
 }
 
 svg#draw>rect {
@@ -199,7 +211,7 @@ svg#draw>line {
     fill: transparent;
     stroke-linejoin: round;
     stroke-linecap: round;
-    vector-effect: non-scaling-stroke;
+    vector-effect: non-scaling-size;
 }
 
 .selection {
@@ -318,8 +330,8 @@ svg#draw>line {
 #box {
     border: 1px solid #888;
     background-color: #eee;
-    min-width: 35px;
-    min-height: 35px;
+    min-width: 37px;
+    min-height: 37px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -347,8 +359,7 @@ svg#draw>line {
     border: none;
     position: fixed;
     right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
+    top: 40%;
     font-size: 16px;
     z-index: 9;
 }

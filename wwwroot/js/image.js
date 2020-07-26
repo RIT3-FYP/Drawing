@@ -101,7 +101,7 @@ function fit(f, w, h, to = 'blob', type = 'image/jpeg') {
             }
             else if (to == 'dataURL') {
                 let dataURL = can.toDataURL(type);
-                resolve(dataURL);
+                resolve({dataURL,nh,nw});
             }
             else {
                 reject('ERROR: Specify blob or dataURL');

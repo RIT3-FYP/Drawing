@@ -19,8 +19,9 @@ namespace Drawing
             //Upload size available
             services.AddSignalR(options =>
             {
-                options.MaximumReceiveMessageSize = 128 * 1024;
-            });//.AddAzureSignalR("Endpoint=https://justdraw.service.signalr.net;AccessKey=DOwWbHKelm4mhDWpzA3gCb4lupNbwhc346jbHQH8/lA=;Version=1.0;");
+                options.MaximumReceiveMessageSize = 1920 * 1080;
+                options.StreamBufferCapacity = 20;
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -37,7 +38,10 @@ namespace Drawing
             app.UseEndpoints(endpoints =>
             {
                 // Configure singalr
-                endpoints.MapHub<DrawHub>("/hub");
+                endpoints.MapHub<DrawHub>("/hub", options => {
+                    options.ApplicationMaxBufferSize = 10485760;
+                    options.TransportMaxBufferSize = 10485760;
+                });
             });
         }
     }
