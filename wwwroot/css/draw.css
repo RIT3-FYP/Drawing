@@ -194,7 +194,6 @@ svg#draw #resize_wrap rect:not(#resize_border) {
 }
 
 svg#draw>ellipse, svg#draw>rect, svg#draw>line, svg#draw>path {
-    fill: transparent;
     stroke-linejoin: round;
     stroke-linecap: round;
     vector-effect: non-scaling-size;
