@@ -24,7 +24,6 @@ namespace Drawing
     {
         public string Id { get; set; }
         public string Object { get; set; }
-        // public DrawObject(string id,)
     }
     public class Point
     {
@@ -98,7 +97,6 @@ namespace Drawing
         ************************************************************************/
         public async Task StartDraw(string id, Point point, string color, string size, string fill)
         {
-            // commands.Add(new Command("startDraw", new Object[] { id, point, color, size }));
             string roomId = Context.GetHttpContext().Request.Query["roomId"];
             Room room = rooms.Find(r => r.Id == roomId);
             if (room == null)
@@ -106,12 +104,9 @@ namespace Drawing
                 await Clients.Caller.SendAsync("Reject");
             }
             await Clients.OthersInGroup(roomId).SendAsync("StartDraw", id, point, color, size, fill);
-
-            // await Clients.Others.SendAsync("StartDraw", id, point, color, size, fill);
         }
         public async Task Draw(string id, Point pointA, Point pointB)
         {
-            // commands.Add(new Command("Draw", new Object[] { id, pointA, pointB }));
             string roomId = Context.GetHttpContext().Request.Query["roomId"];
             Room room = rooms.Find(r => r.Id == roomId);
             if (room == null)
@@ -119,7 +114,6 @@ namespace Drawing
                 await Clients.Caller.SendAsync("Reject");
             }
             await Clients.OthersInGroup(roomId).SendAsync("Draw", id, pointA, pointB);
-            // await Clients.Others.SendAsync("Draw", id, pointA, pointB);
         }
 
         public async Task StartRect(string id, Point point, string color, string size, string fill)
@@ -373,8 +367,8 @@ namespace Drawing
             if (room.IsEmpty)
             {
                 rooms.Remove(room);
-                await UpdateList();
             }
+            await UpdateList();
         }
 
         /************************************************************************
