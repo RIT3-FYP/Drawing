@@ -593,6 +593,11 @@ $query("#content").onmousewheel = e => {
     }
 };
 
+document.body.onkeydown = function(e) {
+  if (e.ctrlKey && e.keyCode == '90' || e.ctrlKey && e.keyCode == '89') {
+    e.preventDefault();
+  }
+}
 document.addEventListener("keydown", e => {
     if (e.keyCode == 8 || e.keyCode == 46 && choosen_id) {
         undoList.push({ mode: 'remove', object: $query(`[id='${choosen_id}']`) });
@@ -601,9 +606,9 @@ document.addEventListener("keydown", e => {
         con.invoke('RemoveObject', choosen_id);
         select();
     } else if (e.ctrlKey && e.keyCode == '90' && !e.repeat) {
-        select(); undo();
+         select(); undo();
     } else if (e.ctrlKey && e.keyCode == '89' && !e.repeat) {
-        select(); redo();
+         select(); redo();
     } else if (e.keyCode == 32) {
         space = true;
         svgDraw.setAttribute("style", "cursor: grab");
