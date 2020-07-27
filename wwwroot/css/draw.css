@@ -185,7 +185,7 @@ svg {
 }
 
 svg#draw #resize_wrap * {
-    vector-effect: non-scaling-size;
+    vector-effect: non-scaling-stroke;
 }
 
 svg#draw #resize_wrap rect:not(#resize_border) {
@@ -193,21 +193,7 @@ svg#draw #resize_wrap rect:not(#resize_border) {
     fill: black;
 }
 
-svg#draw>path {
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    vector-effect: non-scaling-size;
-}
-
-svg#draw>rect {
-    vector-effect: non-scaling-stroke;
-}
-
-svg#draw>ellipse {
-    vector-effect: non-scaling-stroke;
-}
-
-svg#draw>line {
+svg#draw>ellipse, svg#draw>rect, svg#draw>line, svg#draw>path {
     fill: transparent;
     stroke-linejoin: round;
     stroke-linecap: round;

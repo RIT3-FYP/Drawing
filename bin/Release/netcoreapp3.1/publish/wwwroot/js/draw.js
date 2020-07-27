@@ -593,6 +593,11 @@ $query("#content").onmousewheel = e => {
     }
 };
 
+document.body.onkeydown = function(e) {
+  if (e.ctrlKey && e.keyCode == '90' || e.ctrlKey && e.keyCode == '89') {
+    e.preventDefault();
+  }
+}
 document.addEventListener("keydown", e => {
     if (e.keyCode == 8 || e.keyCode == 46 && choosen_id) {
         undoList.push({ mode: 'remove', object: $query(`[id='${choosen_id}']`) });
@@ -601,9 +606,9 @@ document.addEventListener("keydown", e => {
         con.invoke('RemoveObject', choosen_id);
         select();
     } else if (e.ctrlKey && e.keyCode == '90' && !e.repeat) {
-        select(); undo();
+         select(); undo();
     } else if (e.ctrlKey && e.keyCode == '89' && !e.repeat) {
-        select(); redo();
+         select(); redo();
     } else if (e.keyCode == 32) {
         space = true;
         svgDraw.setAttribute("style", "cursor: grab");
@@ -813,14 +818,14 @@ function select(box, line = false) {
         border = `
         <g id="resize_wrap">
         <rect id="resize_border" class='notMoveable' fill="none" stroke="blue" stroke-width="1px" x="${box.x - 25}" y="${box.y - 25}" width="${box.width + 50}" height="${box.height + 50}" />
-        <rect id="resize_nw" class="notMoveable" width="30" height="30" x="${box.x - 40}" y="${box.y - 40}" style="cursor:nw-resize"/>
-        <rect id="resize_n" class='notMoveable' width="30" height="30" x="${box.x + (box.width / 2) - 15}" y="${box.y - 40}" style="cursor:n-resize" />
-        <rect id="resize_ne" class='notMoveable' width="30" height="30" x="${box.x + box.width + 15}" y="${box.y - 40}" style="cursor:ne-resize" />
-        <rect id="resize_e" class='notMoveable' width="30" height="30" x="${box.x + box.width + 15}" y="${box.y + (box.height / 2) - 40}" style="cursor:e-resize"/>
-        <rect id="resize_se" class='notMoveable' width="30" height="30" x="${box.x + box.width + 15}" y="${box.y + box.height + 15}" style="cursor:se-resize" />
-        <rect id="resize_s" class='notMoveable' width="30" height="30"  x="${box.x + (box.width / 2) - 15}" y="${box.y + box.height + 15}" style="cursor:s-resize"/>
-        <rect id="resize_sw" class='notMoveable' width="30" height="30" x="${box.x - 40}" y="${box.y + box.height + 10}" style="cursor:sw-resize"/>
-        <rect id="resize_w" class='notMoveable' width="30" height="30" x="${box.x - 40}" y="${box.y + (box.height / 2) - 40}" style="cursor:w-resize"/>
+        <rect id="resize_nw" class="notMoveable" stroke-width="10" width="1" height="1" x="${box.x - 25}" y="${box.y - 25}" style="cursor:nw-resize"/>
+        <rect id="resize_n" class='notMoveable' stroke-width="10" width="1" height="1" x="${box.x + (box.width / 2)}" y="${box.y - 26}" style="cursor:n-resize" />
+        <rect id="resize_ne" class='notMoveable' stroke-width="10" width="1" height="1" x="${box.x + box.width + 25}" y="${box.y - 25}" style="cursor:ne-resize" />
+        <rect id="resize_e" class='notMoveable' stroke-width="10" width="1" height="1" x="${box.x + box.width + 26}" y="${box.y + (box.height / 2)}" style="cursor:e-resize"/>
+        <rect id="resize_se" class='notMoveable' stroke-width="10" width="1" height="1" x="${box.x + box.width + 25}" y="${box.y + box.height + 25}" style="cursor:se-resize" />
+        <rect id="resize_s" class='notMoveable' stroke-width="10" width="1" height="1"  x="${box.x + (box.width / 2)}" y="${box.y + box.height + 26}" style="cursor:s-resize"/>
+        <rect id="resize_sw" class='notMoveable' stroke-width="10" width="1" height="1" x="${box.x - 25}" y="${box.y + box.height + 25}" style="cursor:sw-resize"/>
+        <rect id="resize_w" class='notMoveable' stroke-width="10" width="1" height="1" x="${box.x - 26}" y="${box.y + (box.height / 2)}" style="cursor:w-resize"/>
         </g>`;
         $query('#xcoord').innerHTML = simplifyNumber(box.x);
         $query('#ycoord').innerHTML = simplifyNumber(box.y);
@@ -1168,6 +1173,7 @@ con.on('MoveObject', moveObject);
 con.on('Create', createObject);
 con.on('PopPoint', popPoint);
 con.on('InsertImage', insertImage);
+con.on('UpdateName',(name)=>$query('#drawName').value = name);
 
 // User connection ===========================================================
 con.on('UserJoin', (user) => {
