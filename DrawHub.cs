@@ -35,26 +35,22 @@ namespace Drawing
         public string Id { get; set; } = Guid.NewGuid().ToString("N");
         public string Name { get; set; } = "Untitled";
         private List<User> users { get; set; }
-
         private List<DrawObject> drawObjects { get; set; }
         private List<Point> points { get; set; }
         public bool IsEmpty => users.Count == 0;
         public int NoUser => users.Count;
+
         public User GetUser(string id) => users.Find(r => r.Id == id);
         public List<User> getUserList() => users;
         public void AddUser(User user) => users.Add(user);
         public void RemoveUser(string id) => users.Remove(users.Find(r => r.Id == id));
-
         public List<Point> getPoints() => points;
         public void AddPoint(Point p) => points.Add(p);
         public void RemovePoint(Point p) => points.Remove(points.Find(point => point.X == p.X && point.Y == p.Y));
         public DrawObject GetDraw(string id) => drawObjects.Find(r => r.Id == id);
         public List<DrawObject> getDrawList() => drawObjects;
-
-
         public void AddDraw(DrawObject o) => drawObjects.Add(o);
         public void RemoveDraw(string id) => drawObjects.Remove(drawObjects.Find(r => r.Id == id));
-
 
         public Room()
         {
