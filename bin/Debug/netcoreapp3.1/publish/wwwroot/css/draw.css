@@ -16,6 +16,7 @@ header {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    user-select: none;
 }
 
 header h1 {
@@ -24,20 +25,47 @@ header h1 {
     background: url(../favicon.png) no-repeat left center / 32px 32px;
 }
 
-#main,
-#content {
-    height: 100%;
+header > div:nth-child(3) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#drawName{
+    border: none;
+    background: #7D7D7D;
+    color:white;
+    font-size: 20pt;
+    flex: 1 1 70%;
+    max-width: 600px;
+    min-width: 100px;
     width: 100%;
 }
 
+#drawName:focus{
+    outline: none;
+    border: 2px solid whitesmoke;
+    background-color: #eee;
+    color: black;
+}
+
+#main {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
 #content {
-    position: relative;
-    overflow: hidden;
+    display: block;
+    overflow: auto;
 }
 
 #nav {
-    position: absolute;
-    z-index: 999999;
+    position: fixed;
+    z-index: 99;
+    top: 50%;
+    transform: translateY(-50%);
     margin: 10px;
     border-radius: 10px;
     border: 1px solid #ccc;
@@ -78,6 +106,18 @@ header h1 {
 
 #type label.typeActive span {
     color: white;
+}
+
+#clear{
+    display:block;
+   padding:5px;
+    margin:5px;
+    border-radius: 10px;
+    background-color: red;
+    cursor:pointer; 
+}
+#clear:hover{
+    background-color: lightcoral;
 }
 
 path.choosen {
@@ -153,34 +193,20 @@ svg#draw #resize_wrap rect:not(#resize_border) {
     fill: black;
 }
 
-svg#draw>path {
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    vector-effect: non-scaling-stroke;
-}
-
-svg#draw>rect {
-    vector-effect: non-scaling-stroke;
-}
-
-svg#draw>ellipse {
-    vector-effect: non-scaling-stroke;
-}
-
-svg#draw>line {
-    fill: transparent;
+svg#draw>ellipse, svg#draw>rect, svg#draw>line, svg#draw>path {
     stroke-linejoin: round;
     stroke-linecap: round;
-    vector-effect: non-scaling-stroke;
+    vector-effect: non-scaling-size;
 }
 
 .selection {
     display: flex;
-    top: 50px;
+    position: sticky;
+    top: 0;
     background-color: #D3D3D3;
     justify-content: center;
     align-items: center;
-    z-index: 9999;
+    z-index: 99;
 }
 
 .selection>div {
@@ -209,6 +235,7 @@ svg#draw>line {
     border: none;
     text-align: center;
     padding: 12px 25px;
+    margin-left: 20px;
     border-radius: 5px;
     font-size: 16px;
 }
@@ -288,8 +315,8 @@ svg#draw>line {
 #box {
     border: 1px solid #888;
     background-color: #eee;
-    width: 35px;
-    height: 35px;
+    min-width: 37px;
+    min-height: 37px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -315,16 +342,11 @@ svg#draw>line {
 
 #users {
     border: none;
-    text-align: center;
-    padding: 15px 32px;
     position: fixed;
-    right: 20px;
-    top: 150px;
-    height: 50%;
-    border-radius: 5px;
-    display: inline-block;
+    right: 10px;
+    top: 40%;
     font-size: 16px;
-    z-index: 1;
+    z-index: 9;
 }
 
 #users>.userlist {
@@ -336,21 +358,39 @@ svg#draw>line {
     padding: 10px 15px;
     top: 0px;
     right: 10%;
-    text-justify: auto;
-    background-color: grey;
-    z-index: 1;
     border-radius: 50%;
-    cursor: default;
+    transition-duration: 0.2s;
+    user-select: none;
 }
 
 #users>.userlist:hover {
     z-index: 2;
     font-size: 30px;
-    padding: 17px 25px;
-    transition-duration: 0.5s;
+    padding: 17px 23px;
+    transition-duration: 0.2s;
     transform: translateY(-20%);
     box-shadow: 2px 2px 10px gray;
-    cursor: default;
+}
+
+#connectionStatus {
+    top: 0;
+    right: 0;    
+    bottom: 0;
+    left: 0;
+    background-color: rgba(255, 255, 255, 0.95);
+    position: fixed;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 40px;
+    font-weight: bold;
+    user-select: none;
+}
+
+#connectionStatus[hidden] {
+    display: none;
 }
 
 @keyframes cycle {
@@ -371,3 +411,54 @@ svg#draw>line {
     }
 }
 
+@media (max-width: 768px) {
+    #coordinate, #svgScale {
+        display: none;
+    }
+
+    header h1 {
+        width: 0;
+        color: transparent;
+    }
+
+    #leave {
+        margin-left: 10px;
+        padding: 10px 20px;
+    }
+
+    .selection {
+        overflow-x: auto;
+        justify-content: space-around;
+        padding-left: 40px;
+    }
+
+    .selection label {
+        display: block;
+    }
+
+    .selection .slider {
+        width: 100%;
+    }
+
+    .selection > div:nth-child(1) {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 5px;
+    }
+
+    #nav {
+        left: 0;
+        overflow-y: auto;
+        margin: 0;
+        max-height: 100%;
+    }
+
+    #type label {
+        padding: 7px 10px;
+        margin: 3px;
+    }
+
+    .material-icons {
+        font-size: 20px;
+    }
+}

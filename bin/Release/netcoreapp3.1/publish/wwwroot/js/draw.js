@@ -61,7 +61,6 @@ svgDraw.onpointerdown = svgDraw.onpointerenter = e => {
         let current_position = cursorPoint(e);
 
         if (choosen_id && (e.target.tagName == "svg" || e.target.id == "bg_grid")) select();
-        console.log(simplifyNumber(current_position.x));
         $query('#xcoord').innerHTML = simplifyNumber(current_position.x);
         $query('#ycoord').innerHTML = simplifyNumber(current_position.y);
         if (space && e.type == "pointerdown") grab = true;
@@ -142,7 +141,6 @@ svgDraw.onpointermove = async (e) => {
 
                         if (resize_angle == "resize_e") {
                             current_scale.x = Math.max((current_position.x - (selected_info.x + selected_info.width) + selected_info.width) / selected_info.width, 0.1);
-                            // console.log(-selected_info.x);
                             $query(`[id='${choosen_id}']`).style.transform = `translate(${selected_info.x}px,0) scale(${current_scale.x},${current_scale.y}) translate(${-selected_info.x}px,0)`;
                             $query('#resize_wrap').style.transform = `translate(${selected_info.x}px,0) scale(${current_scale.x},${current_scale.y}) translate(${-selected_info.x}px,0)`;
                         } else if (resize_angle == "resize_w") {
@@ -592,12 +590,13 @@ $query("#content").onmousewheel = e => {
         $query('#svgScale').innerText = `${(svgScale * 100).toFixed(0)}%`;
     }
 };
-
-document.body.onkeydown = function(e) {
-  if (e.ctrlKey && e.keyCode == '90' || e.ctrlKey && e.keyCode == '89') {
-    e.preventDefault();
-  }
+// Prevent undo redo
+document.body.onkeydown = function (e) {
+    if (e.ctrlKey && e.keyCode == '90' || e.ctrlKey && e.keyCode == '89') {
+        e.preventDefault();
+    }
 }
+// Listen keyboard action
 document.addEventListener("keydown", e => {
     if (e.keyCode == 8 || e.keyCode == 46 && choosen_id) {
         undoList.push({ mode: 'remove', object: $query(`[id='${choosen_id}']`) });
@@ -606,9 +605,9 @@ document.addEventListener("keydown", e => {
         con.invoke('RemoveObject', choosen_id);
         select();
     } else if (e.ctrlKey && e.keyCode == '90' && !e.repeat) {
-         select(); undo();
+        select(); undo();
     } else if (e.ctrlKey && e.keyCode == '89' && !e.repeat) {
-         select(); redo();
+        select(); redo();
     } else if (e.keyCode == 32) {
         space = true;
         svgDraw.setAttribute("style", "cursor: grab");
@@ -623,6 +622,7 @@ document.addEventListener("keyup", e => {
     }
 }, passiveSupport ? { capture: true, passive: true } : { capture: true });
 
+// Remove css 
 document.onpointerup = e => {
     e.preventDefault();
     grab = false;
@@ -638,16 +638,17 @@ document.onpointerup = e => {
     }
 };
 
+// Undo
 $query('#undo').onpointerdown = e => {
     if (undoList.length == 0) return;
     select(); undo();
 }
-
+// Redo
 $query('#redo').onpointerdown = e => {
     if (redoList.length == 0) return;
     select(); redo();
 }
-
+// Upload file
 $query('#file').onchange = async (e) => {
     let f = e.target.files[0];
     let svg = svgDraw.getAttribute("viewBox").split(" ");
@@ -670,7 +671,7 @@ $query('#file').onchange = async (e) => {
     }
     e.target.value = null;
 }
-
+// Download image
 $query("#save input").onclick = async () => {
     let cloneSvg = svgDraw.cloneNode(true);
     cloneSvg.querySelectorAll('g').forEach(n => n.remove());
@@ -695,14 +696,12 @@ $query("#save input").onclick = async () => {
     }, { once: true });
     img.src = url;
 }
-
+// remove whole thing
 $query("#clear").onclick = () => {
     reset();
-    redoUndoStatus('undo');
-    redoUndoStatus('redo');
     con.invoke('Reset');
 };
-
+// remove one thing
 $query("#remove input").onclick = () => {
     if (!choosen_id) return;
     undoList.push({ mode: 'remove', object: $query(`[id='${choosen_id}']`) });
@@ -839,7 +838,7 @@ function select(box, line = false) {
         $query('#ycoord').innerHTML = simplifyNumber(box.y1 - 20);
     }
     svgDraw.insertAdjacentHTML('beforeend', border);
-   
+
 }
 
 function redoUndoStatus(event, con = false) {    // event = undo/redo     con true mean no need to set the list to empty
@@ -958,6 +957,8 @@ function removeObject(id, condition = false) { // Remove object
 }
 
 function reset() {    // Reset svg
+    redoUndoStatus('undo');
+    redoUndoStatus('redo');
     svgDraw.innerHTML = `<g><defs><pattern id="smallGrid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24,0L0,0,0,24" fill="none" stroke="#cccccc" stroke-width="1" /></pattern><pattern id="grid" width="240" height="240" patternUnits="userSpaceOnUse"><rect width="240" height="240" fill="url(#smallGrid)" /><path d="M240,0L0,0,0,240" fill="none" stroke="#cccccc" stroke-width="2" /></pattern></defs><rect width="100%" height="100%" fill="white" class="notMoveable" /><rect id="bg_grid" width="100%" height="100%" fill="url(#grid)" class="notMoveable" /></g><g id="cursors"></g>`;
     select();
 }
@@ -1052,8 +1053,6 @@ function redo() {
             con.invoke('RemoveObject', firstId);
             svgDraw.appendChild(temp.object2);
             con.invoke('Create', getString(temp.object2));
-            console.log(temp.object1);
-            console.log(temp.object2);
         }
     } else if (temp.mode == 'remove') {
         let tempId = temp.object.getAttribute('id');
@@ -1167,13 +1166,13 @@ con.on('StartCircle', startCircle);
 con.on('DrawCircle', drawCircle);
 con.on('DrawLine', drawLine);
 con.on('PushPoint', pushPoint);
+con.on('PopPoint', popPoint);
 con.on('RemoveObject', id => removeObject(id, true));
 con.on('Reset', reset);
 con.on('MoveObject', moveObject);
 con.on('Create', createObject);
-con.on('PopPoint', popPoint);
 con.on('InsertImage', insertImage);
-con.on('UpdateName',(name)=>$query('#drawName').value = name);
+con.on('UpdateName', (name) => $query('#drawName').value = name);
 
 // User connection ===========================================================
 con.on('UserJoin', (user) => {
@@ -1265,14 +1264,13 @@ con.start().then(e => {
     }, passiveSupport ? { passive: true } : false);
 });
 
+// Reconnecting
 con.onreconnecting(() => {
-    console.assert(con.state === signalR.HubConnectionState.Reconnecting);
     $query('#connectionStatus').hidden = false;
     $query('#connectionStatus').innerText = "Reconnecting...";
 });
-
+// Reconnected
 con.onreconnected(() => {
-    console.assert(con.state === signalR.HubConnectionState.Connected);
     $query('#connectionStatus').innerText = "Reconnected!";
     setTimeout(() => $query('#connectionStatus').hidden = true, 2000);
 });
