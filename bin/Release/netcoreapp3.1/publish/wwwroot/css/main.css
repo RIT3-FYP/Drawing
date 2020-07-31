@@ -72,5 +72,8 @@ form button {
 
 footer {
     margin-top: 50px;
-    
+}
+
+footer p {
+    text-align: center;
 }

@@ -28,7 +28,8 @@
     </main>
 
     <footer>
-        Developed by Chen Yew Seng, Lim Jia Ying and Jane Choo En Wei
+        Developed by Chen Yew Seng, Lim Jia Ying and Jane Choo En Wei.
+        <p>Get to know more about this project  <a href="about.html">here</a>.</p>
     </footer>
 
     <script>document.querySelector("form").onsubmit=a=>{a.preventDefault(),document.querySelector("small").hidden=!0;let b=document.getElementById("name").value.trim();b?(sessionStorage.setItem("name",b),location="list.html"):(document.querySelector("small").innerText="Name is required!",document.querySelector("small").hidden=!1,document.getElementById("name").value="",document.getElementById("name").focus())},window.onload=()=>document.querySelector("body").hidden=!1;</script>
