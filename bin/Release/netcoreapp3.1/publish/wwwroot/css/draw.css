@@ -1,5 +1,6 @@
 * {
-    box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+            box-sizing: border-box;
 }
 
 body {
@@ -13,10 +14,19 @@ header {
     background: #7D7D7D;
     color: #ffffff;
     padding: 10px 30px;
+    display: -webkit-box;
+    display: -ms-flexbox;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    user-select: none;
+    -webkit-box-align: center;
+        -ms-flex-align: center;
+            align-items: center;
+    -webkit-box-pack: justify;
+        -ms-flex-pack: justify;
+            justify-content: space-between;
+    -webkit-user-select: none;
+       -moz-user-select: none;
+        -ms-user-select: none;
+            user-select: none;
 }
 
 header h1 {
@@ -26,9 +36,15 @@ header h1 {
 }
 
 header > div:nth-child(3) {
+    display: -webkit-box;
+    display: -ms-flexbox;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    -webkit-box-align: center;
+        -ms-flex-align: center;
+            align-items: center;
+    -webkit-box-pack: center;
+        -ms-flex-pack: center;
+            justify-content: center;
 }
 
 #drawName{
@@ -36,7 +52,9 @@ header > div:nth-child(3) {
     background: #7D7D7D;
     color:white;
     font-size: 20pt;
-    flex: 1 1 70%;
+    -webkit-box-flex: 1;
+        -ms-flex: 1 1 70%;
+            flex: 1 1 70%;
     max-width: 600px;
     min-width: 100px;
     width: 100%;
@@ -52,8 +70,13 @@ header > div:nth-child(3) {
 #main {
     height: 100%;
     width: 100%;
+    display: -webkit-box;
+    display: -ms-flexbox;
     display: flex;
-    flex-direction: column;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+        -ms-flex-direction: column;
+            flex-direction: column;
 }
 
 #content {
@@ -64,19 +87,25 @@ header > div:nth-child(3) {
 #nav {
     position: fixed;
     z-index: 99;
-    top: 50%;
-    transform: translateY(-50%);
+    top: 110px;
     margin: 10px;
     border-radius: 10px;
     border: 1px solid #ccc;
-    box-shadow: 2px 2px 10px #ccc;
+    -webkit-box-shadow: 2px 2px 10px #ccc;
+            box-shadow: 2px 2px 10px #ccc;
     background-color: #D3D3D3;
-    user-select: none;
+    -webkit-user-select: none;
+       -moz-user-select: none;
+        -ms-user-select: none;
+            user-select: none;
 }
 
 #nav * {
     color: #333;
-    user-select: none;
+    -webkit-user-select: none;
+       -moz-user-select: none;
+        -ms-user-select: none;
+            user-select: none;
 }
 
 #type label {
@@ -94,7 +123,7 @@ header > div:nth-child(3) {
     background-color: #ddd;
 }
 
-#nav [type="radio"] {
+#type input {
     display: none;
 }
 
@@ -130,7 +159,8 @@ path.choosen {
 
 [hidden]::before {
     content: "Loading...";
-    box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+            box-sizing: border-box;
     position: absolute;
     top: 50%;
     left: 50%;
@@ -141,20 +171,30 @@ path.choosen {
     border-radius: 50%;
     border: 2px solid #ccc;
     border-top-color: #333;
-    animation: spinner 0.8s linear infinite;
+    -webkit-animation: spinner 0.8s linear infinite;
+            animation: spinner 0.8s linear infinite;
     text-indent: 100%;
     white-space: nowrap;
     overflow: hidden;
 }
 
+@-webkit-keyframes spinner {
+    to {
+        -webkit-transform: rotate(360deg);
+                transform: rotate(360deg);
+    }
+}
+
 @keyframes spinner {
     to {
-        transform: rotate(360deg);
+        -webkit-transform: rotate(360deg);
+                transform: rotate(360deg);
     }
 }
 
 svg {
-    touch-action: none;
+    -ms-touch-action: none;
+        touch-action: none;
 }
 
 #draw {
@@ -193,25 +233,39 @@ svg#draw #resize_wrap rect:not(#resize_border) {
     fill: black;
 }
 
-svg#draw>ellipse, svg#draw>rect, svg#draw>line, svg#draw>path {
+svg#draw>ellipse, svg#draw>rect, svg#draw>line {
+    vector-effect: non-scaling-size;
+}
+
+svg#draw>path {
     stroke-linejoin: round;
     stroke-linecap: round;
     vector-effect: non-scaling-size;
 }
 
 .selection {
+    display: -webkit-box;
+    display: -ms-flexbox;
     display: flex;
+    position: -webkit-sticky;
     position: sticky;
     top: 0;
     background-color: #D3D3D3;
-    justify-content: center;
-    align-items: center;
+    -webkit-box-pack: center;
+        -ms-flex-pack: center;
+            justify-content: center;
+    -webkit-box-align: center;
+        -ms-flex-align: center;
+            align-items: center;
     z-index: 99;
 }
 
 .selection>div {
     margin: 5px 10px;
-    user-select: none;
+    -webkit-user-select: none;
+       -moz-user-select: none;
+        -ms-user-select: none;
+            user-select: none;
 }
 
 /* Notification */
@@ -224,6 +278,8 @@ svg#draw>ellipse, svg#draw>rect, svg#draw>line, svg#draw>path {
     background-color: #8BE5AD;
     border-radius: 7px;
     width: auto;
+    -webkit-transition: 0.1s;
+    -o-transition: 0.1s;
     transition: 0.1s;
     z-index: 1;
     margin-top: 10px;
@@ -250,11 +306,15 @@ svg#draw>ellipse, svg#draw>rect, svg#draw>line, svg#draw>path {
 }
 
 #undo span {
-    transform: rotate(35deg);
+    -webkit-transform: rotate(35deg);
+        -ms-transform: rotate(35deg);
+            transform: rotate(35deg);
 }
 
 #redo span {
-    transform: rotate(-35deg);
+    -webkit-transform: rotate(-35deg);
+        -ms-transform: rotate(-35deg);
+            transform: rotate(-35deg);
 }
 
 .btnUR{
@@ -289,6 +349,8 @@ svg#draw>ellipse, svg#draw>rect, svg#draw>line, svg#draw>path {
     border-radius: 5px;
     opacity: 0.7;
     -webkit-transition: .2s;
+    -webkit-transition: opacity .2s;
+    -o-transition: opacity .2s;
     transition: opacity .2s;  
     outline: none;  
 }
@@ -301,7 +363,8 @@ svg#draw>ellipse, svg#draw>rect, svg#draw>line, svg#draw>path {
     border-radius: 50%; 
     background: #BBD7EC;
     cursor: pointer;
-    box-shadow: 2px 2px 10px gray;
+    -webkit-box-shadow: 2px 2px 10px gray;
+            box-shadow: 2px 2px 10px gray;
 }
 
 .slider::-moz-range-thumb {
@@ -317,9 +380,15 @@ svg#draw>ellipse, svg#draw>rect, svg#draw>line, svg#draw>path {
     background-color: #eee;
     min-width: 37px;
     min-height: 37px;
+    display: -webkit-box;
+    display: -ms-flexbox;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    -webkit-box-align: center;
+        -ms-flex-align: center;
+            align-items: center;
+    -webkit-box-pack: center;
+        -ms-flex-pack: center;
+            justify-content: center;
 }
 
 #xcoord {
@@ -359,17 +428,27 @@ svg#draw>ellipse, svg#draw>rect, svg#draw>line, svg#draw>path {
     top: 0px;
     right: 10%;
     border-radius: 50%;
-    transition-duration: 0.2s;
-    user-select: none;
+    -webkit-transition-duration: 0.2s;
+         -o-transition-duration: 0.2s;
+            transition-duration: 0.2s;
+    -webkit-user-select: none;
+       -moz-user-select: none;
+        -ms-user-select: none;
+            user-select: none;
 }
 
 #users>.userlist:hover {
     z-index: 2;
     font-size: 30px;
     padding: 17px 23px;
-    transition-duration: 0.2s;
-    transform: translateY(-20%);
-    box-shadow: 2px 2px 10px gray;
+    -webkit-transition-duration: 0.2s;
+         -o-transition-duration: 0.2s;
+            transition-duration: 0.2s;
+    -webkit-transform: translateY(-20%);
+        -ms-transform: translateY(-20%);
+            transform: translateY(-20%);
+    -webkit-box-shadow: 2px 2px 10px gray;
+            box-shadow: 2px 2px 10px gray;
 }
 
 #connectionStatus {
@@ -380,17 +459,44 @@ svg#draw>ellipse, svg#draw>rect, svg#draw>line, svg#draw>path {
     background-color: rgba(255, 255, 255, 0.95);
     position: fixed;
     z-index: 999;
+    display: -webkit-box;
+    display: -ms-flexbox;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    -webkit-box-align: center;
+        -ms-flex-align: center;
+            align-items: center;
+    -webkit-box-pack: center;
+        -ms-flex-pack: center;
+            justify-content: center;
     font-family: 'Courier New', Courier, monospace;
     font-size: 40px;
     font-weight: bold;
-    user-select: none;
+    -webkit-user-select: none;
+       -moz-user-select: none;
+        -ms-user-select: none;
+            user-select: none;
 }
 
 #connectionStatus[hidden] {
     display: none;
+}
+
+@-webkit-keyframes cycle {
+    0% {
+        color: rgb(255, 127, 8)
+    }
+    20% {
+        color: rgb(36, 46, 25)
+    }
+    40% {
+        color: rgb(12, 220, 235);
+    }
+    60% {
+        color: rgb(199, 13, 236);
+    }
+    80% {
+        color: rgb(247, 9, 9);
+    }
 }
 
 @keyframes cycle {
@@ -428,8 +534,9 @@ svg#draw>ellipse, svg#draw>rect, svg#draw>line, svg#draw>path {
 
     .selection {
         overflow-x: auto;
-        justify-content: space-around;
-        padding-left: 40px;
+        -ms-flex-pack: distribute;
+            justify-content: space-around;
+        padding: 0 10px;
     }
 
     .selection label {
@@ -441,7 +548,9 @@ svg#draw>ellipse, svg#draw>rect, svg#draw>line, svg#draw>path {
     }
 
     .selection > div:nth-child(1) {
+        display: -ms-grid;
         display: grid;
+        -ms-grid-columns: 1fr 5px 1fr;
         grid-template-columns: 1fr 1fr;
         gap: 5px;
     }
@@ -450,7 +559,7 @@ svg#draw>ellipse, svg#draw>rect, svg#draw>line, svg#draw>path {
         left: 0;
         overflow-y: auto;
         margin: 0;
-        max-height: 100%;
+        max-height: calc(100% - 110px);
     }
 
     #type label {
